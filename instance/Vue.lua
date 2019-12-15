@@ -22,14 +22,18 @@ Vue.prototype = {options = {}}
 ---@return Component
 Vue.new = function(options)
     local instance = createPlainObject()
+    local mt = getmetatable(instance)
+    local index, newindex = mt.__index, mt.__newindex
+    mt.__index, mt.__newindex = nil, nil
 
     for i, v in pairs(Vue.prototype) do
         instance[i] = v
     end
-
     instance.__proto = Vue.prototype
 
     instance:_init(options)
+
+    mt.__index, mt.__newindex = index, newindex
     return instance
 end
 

@@ -114,7 +114,8 @@ local function eventsMixin(Vue)
         local callable
         local function on(_, ...)
             vm:_off(event, callable)
-            fn(vm, ...)
+            local info = 'once event handler for "${' .. event .. '}"'
+            invokeWithErrorHandling(fn, vm, info, ...)
         end
         callable = {fn = fn, __call = on}
         setmetatable(callable, callable)
@@ -181,7 +182,7 @@ local function eventsMixin(Vue)
         local cbs = vm._events[event]
         if (cbs) then
             cbs = #cbs > 1 and toArray(cbs) or cbs
-            local info = 'event handler for "${event}"'
+            local info = 'event handler for "${' .. event .. '}"'
             local l = #cbs
             for i = 1, l do
                 invokeWithErrorHandling(cbs[i], vm, info, vm, ...)

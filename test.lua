@@ -208,6 +208,7 @@ require("test.unit.modules.observer.TestObserver")
 
 require("test.unit.features.instance.TestInit")
 require("test.unit.features.instance.methods-data")
+require("test.unit.features.instance.methods-events")
 
 local runner = lu.LuaUnit.new()
 runner:setOutputType("tap")

@@ -2038,7 +2038,7 @@ TapOutput.__class__ = 'TapOutput'
 
         io.stdout:write("not ok ", self.result.currentTestNumber, "\t", node.testName, "\n")
         if self.verbosity > M.VERBOSITY_LOW then
-           print( prefixString( '#   ', node.msg ) )
+           print( prefixString( '#   ', node.msg .. node.stackTrace ) )
         end
         if (node:isFailure() or node:isError()) and self.verbosity > M.VERBOSITY_DEFAULT then
            print( prefixString( '#   ', node.stackTrace ) )

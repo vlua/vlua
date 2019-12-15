@@ -74,35 +74,35 @@ local function lifecycleMixin (Vue)
     ---@param vnode VNode
     ---@param hydrating boolean
     function Vue.prototype:_update(vnode, hydrating)
-        ---@type Component
-        local vm = self
-        local prevEl = vm._el
-        local prevVnode = vm._vnode
-        local restoreActiveInstance = setActiveInstance(vm)
-        vm._vnode = vnode
-        -- Vue.__patch__ is injected in entry points
-        -- based on the rendering backend used.
-        if (not prevVnode) then
-            -- initial render
-            vm._el = vm:__patch__(vm._el, vnode, hydrating, false --[[ removeOnly ]])
-        else
-            -- updates
-            vm._el = vm:__patch__(prevVnode, vnode)
-        end
-        restoreActiveInstance()
-        -- update __vue__ reference
-        if (prevEl) then
-            prevEl.__vue__ = nil
-        end
-        if (vm._el) then
-            vm._el.__vue__ = vm
-        end
-        -- if parent is an HOC, update its $el as well
-        if (vm._vnode and vm._parent and vm._vnode == vm._parent._vnode) then
-            vm._parent._el = vm._el
-        end
-        -- updated hook is called by the scheduler to ensure that children are
-        -- updated in a parent's updated hook.
+        -- ---@type Component
+        -- local vm = self
+        -- local prevEl = vm._el
+        -- local prevVnode = vm._vnode
+        -- local restoreActiveInstance = setActiveInstance(vm)
+        -- vm._vnode = vnode
+        -- -- Vue.__patch__ is injected in entry points
+        -- -- based on the rendering backend used.
+        -- if (not prevVnode) then
+        --     -- initial render
+        --     vm._el = vm:__patch__(vm._el, vnode, hydrating, false --[[ removeOnly ]])
+        -- else
+        --     -- updates
+        --     vm._el = vm:__patch__(prevVnode, vnode)
+        -- end
+        -- restoreActiveInstance()
+        -- -- update __vue__ reference
+        -- if (prevEl) then
+        --     prevEl.__vue__ = nil
+        -- end
+        -- if (vm._el) then
+        --     vm._el.__vue__ = vm
+        -- end
+        -- -- if parent is an HOC, update its $el as well
+        -- if (vm._vnode and vm._parent and vm._vnode == vm._parent._vnode) then
+        --     vm._parent._el = vm._el
+        -- end
+        -- -- updated hook is called by the scheduler to ensure that children are
+        -- -- updated in a parent's updated hook.
     end
 
     function Vue.prototype:_forceUpdate()
@@ -180,12 +180,12 @@ mountComponent = function (
     vm._el = el
     if (not vm._render) then
       vm._render = noop
-      if (config.env ~= 'production')  then
-          warn(
-            'Failed to mount component: template or render function not defined.',
-            vm
-          )
-      end
+    --   if (config.env ~= 'production')  then
+    --       warn(
+    --         'Failed to mount component: template or render function not defined.',
+    --         vm
+    --       )
+    --   end
     end
     callHook(vm, 'beforeMount')
 

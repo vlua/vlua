@@ -9,7 +9,7 @@ local function _traverse (val, seen)
     ---@type ReactiveMetatable
     local mt = getmetatable(val)
     if (mt and mt.__ob__) then
-        local depId = val.__ob__.dep.id
+        local depId = mt.__ob__.dep.id
         if (seen[depId]) then
             return
         end

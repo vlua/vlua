@@ -134,15 +134,15 @@ function lu.createSpy(name)
         end
     end
 
-    function spy.toHaveBeenMembberCalledWith(fn, ...)
-        spy.toHaveBeenCalledWith(fn, spy, ...)
+    function spy.toHaveBeenMembberCalledWith(...)
+        spy.toHaveBeenCalledWith(spy, ...)
     end
 
-    function spy.toHaveBeenCalled(fn)
-        lu.assertNotEquals(spy.calls[fn], 0, "not called with name:" .. name)
+    function spy.toHaveBeenCalled()
+        lu.assertNotEquals(#spy.calls, 0, "not called with name:" .. name)
     end
-    function spy.toHaventBeenCalled(fn)
-        lu.assertEquals(spy.calls[fn], 0, "but called with name:" .. name)
+    function spy.toHaventBeenCalled()
+        lu.assertEquals(#spy.calls, 0, "but called with name:" .. name)
     end
 
     setmetatable(spy, spy)

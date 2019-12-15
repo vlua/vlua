@@ -109,7 +109,9 @@ function Watcher:constructor(vm, expOrFn, cb, options, isRenderWatcher)
             end
         end
     end
-    self.value = self.lazy or self:get()
+    if not self.lazy then
+        self.value = self:get()
+    end
 end
 
 -- Evaluate the getter, and re-collect dependencies.

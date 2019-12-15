@@ -57,7 +57,7 @@ describe(
                 waitForUpdate()
                 lu.assertEquals(watcher1.value, 123)
                 lu.assertEquals(watcher2.value, nil)
-                lu.assertEquals(spy.calls.count(), 1)
+                lu.assertEquals(#spy.calls, 1)
                 spy.toHaveBeenCalledWith(vm, 123, nil)
             end
         )
@@ -77,7 +77,7 @@ describe(
         it(
             "path containing $data",
             function()
-                local watcher = Watcher.new(vm, "$data.b.c", spy)
+                local watcher = Watcher.new(vm, "_data.b.c", spy)
                 lu.assertEquals(watcher.value, 2)
                 vm.b = {c = 3}
                 waitForUpdate()
@@ -213,14 +213,14 @@ describe(
                 lu.assertEquals(watcher.lazy, true)
                 lu.assertEquals(watcher.value, nil)
                 lu.assertEquals(watcher.dirty, true)
-                watcher.evaluate()
+                watcher:evaluate()
                 lu.assertEquals(watcher.value, 5)
                 lu.assertEquals(watcher.dirty, false)
                 vm.a = 2
                 waitForUpdate()
                 lu.assertEquals(watcher.value, 5)
                 lu.assertEquals(watcher.dirty, true)
-                watcher.evaluate()
+                watcher:evaluate()
                 lu.assertEquals(watcher.value, 6)
                 lu.assertEquals(watcher.dirty, false)
             end
@@ -230,7 +230,7 @@ describe(
             "teardown",
             function()
                 local watcher = Watcher.new(vm, "b.c", spy)
-                watcher.teardown()
+                watcher:teardown()
                 vm.b.c = 3
                 waitForUpdate()
                 lu.assertEquals(watcher.active, false)
@@ -238,12 +238,12 @@ describe(
             end
         )
 
-        it(
-            "warn not support path",
-            function()
-                Watcher.new(vm, "d.e + c", spy)
-                lu.assertEquals("Failed watching path =").toHaveBeenWarned()
-            end
-        )
+        -- it(
+        --     "warn not support path",
+        --     function()
+        --         Watcher.new(vm, "d.e + c", spy)
+        --         lu.assertEquals("Failed watching path =").toHaveBeenWarned()
+        --     end
+        -- )
     end
 )

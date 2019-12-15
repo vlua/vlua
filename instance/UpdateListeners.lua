@@ -32,7 +32,7 @@ local normalizeEvent =
 local function createFnInvoker(fns, vm)
     local fn
     local invoker = {}
-    fn = function(...)
+    fn = function(_, ...)
         local fns = invoker.fns
         if (isArray(fns)) then
             local cloned = slice(fns)

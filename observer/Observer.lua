@@ -2,6 +2,8 @@ local config = require("config")
 local Dep = require("observer.Dep")
 local Utils = require("observer.Utils")
 local pairs = pairs
+local ipairs = ipairs
+local next = next
 local type = type
 local warn = print
 local getmetatable = getmetatable
@@ -175,7 +177,6 @@ function Observer:constructor(value)
         return valueStore and valueStore[V_SETTER](valueStore, value)
     end
     setmetatable(value, mt)
-
     -- if (Array.isArray(value)) {
     --   if (hasProto) {
     --     protoAugment(value, arrayMethods)
@@ -186,6 +187,23 @@ function Observer:constructor(value)
     -- } else {
     walk(value)
     -- }
+
+    mt.__pairs = function()
+        local key, valueStore
+        return function()
+            key, valueStore = next(valuesStore, key)
+            return key, valueStore and valueStore[V_GETTER](valueStore)
+        end
+    end
+    mt.__ipairs = function()
+        local i = 1
+        local valueStore
+        return function()
+            valueStore = valuesStore[i]
+            i = i + 1
+            return i, valueStore and valueStore[V_GETTER](valueStore)
+        end
+    end
 end
  --
 

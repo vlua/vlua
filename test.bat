@@ -1,1 +1,1 @@
-luaexe\lua53 test.lua
+luaexe\lua53 .\test.lua

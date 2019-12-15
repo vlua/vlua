@@ -112,7 +112,7 @@ local function eventsMixin(Vue)
         ---@type Component
         local vm = self
         local callable
-        local function on(...)
+        local function on(_, ...)
             vm:_off(event, callable)
             fn(vm, ...)
         end

@@ -104,6 +104,7 @@ describe(
         it(
             "deep watch",
             function()
+                print("deep")
                 local oldB
                 local watcher = Watcher.new(
                     vm,
@@ -115,15 +116,17 @@ describe(
                 )
                 vm.b.c = {d = 4}
                 waitForUpdate()
-                spy.toHaveBeenCalledWith(vm.b, vm.b)
+                spy.toHaveBeenCalledWith(vm, vm.b, vm.b)
                 oldB = vm.b
                 vm.b = {c = {{a = 1}}}
 
-                spy.toHaveBeenCalledWith(vm.b, oldB)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, vm.b, oldB)
                 lu.assertEquals(#spy.calls, 2)
                 vm.b.c[1].a = 2
 
-                spy.toHaveBeenCalledWith(vm.b, vm.b)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, vm.b, vm.b)
                 lu.assertEquals(#spy.calls, 3)
             end
         )

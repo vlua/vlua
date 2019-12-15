@@ -101,8 +101,10 @@ local function defineReactive(obj, key, val, customSetter, shallow)
     local mt = getmetatable(obj)
     local vStore = {}
     mt.__valuesStore[key] = vStore
-    val = obj[key]
-    obj[key] = nil
+    if val == nil then
+        val = obj[key]
+        obj[key] = nil
+    end
     vStore[V_VALUE] = val
 
     local childOb = not shallow and observe(val)

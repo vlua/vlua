@@ -34,70 +34,60 @@ describe(
                 vm.b.c = 3
                 waitForUpdate()
 
-                expect(watcher.value, 3)
-                spy.toHaveBeenCalledWith(3, 2)
+                lu.assertEquals(watcher.value, 3)
+                spy.toHaveBeenCalledWith(vm, 3, 2)
                 vm.b = {c = 4} -- swapping the object
 
-                expect(watcher.value, 4)
-                spy.toHaveBeenCalledWith(4, 3)
+                waitForUpdate()
+                lu.assertEquals(watcher.value, 4)
+                spy.toHaveBeenCalledWith(vm, 4, 3)
             end
         )
 
         it(
             "non-existent path, set later",
-            function(done)
+            function()
                 local watcher1 = Watcher.new(vm, "b.e", spy)
-                expect(watcher1.value).toBeUndefined()
+                lu.assertEquals(watcher1.value, nil)
                 -- check $add should not affect isolated children
-                local child2 = new
-                Vue({parent = vm})
+                local child2 = Vue.new({parent = vm})
                 local watcher2 = Watcher.new(child2, "b.e", spy)
-                expect(watcher2.value).toBeUndefined()
+                lu.assertEquals(watcher2.value, nil)
                 Vue.set(vm.b, "e", 123)
-                waitForUpdate(
-                    function()
-                        expect(watcher1.value, 123)
-                        expect(watcher2.value).toBeUndefined()
-                        expect(spy.calls.count(), 1)
-                        spy.toHaveBeenCalledWith(123, undefined)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(watcher1.value, 123)
+                lu.assertEquals(watcher2.value, nil)
+                lu.assertEquals(spy.calls.count(), 1)
+                spy.toHaveBeenCalledWith(vm, 123, nil)
             end
         )
 
         it(
             "delete",
-            function(done)
+            function()
                 local watcher = Watcher.new(vm, "b.c", spy)
-                expect(watcher.value, 2)
+                lu.assertEquals(watcher.value, 2)
                 Vue.delete(vm.b, "c")
-                waitForUpdate(
-                    function()
-                        expect(watcher.value).toBeUndefined()
-                        spy.toHaveBeenCalledWith(undefined, 2)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(watcher.value, nil)
+                spy.toHaveBeenCalledWith(vm, nil, 2)
             end
         )
 
         it(
             "path containing $data",
-            function(done)
+            function()
                 local watcher = Watcher.new(vm, "$data.b.c", spy)
-                expect(watcher.value, 2)
+                lu.assertEquals(watcher.value, 2)
                 vm.b = {c = 3}
-                waitForUpdate(
-                    function()
-                        expect(watcher.value, 3)
-                        spy.toHaveBeenCalledWith(3, 2)
-                        vm._data.b.c = 4
-                    end
-                ).thento(
-                    function()
-                        expect(watcher.value, 4)
-                        spy.toHaveBeenCalledWith(4, 3)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(watcher.value, 3)
+                spy.toHaveBeenCalledWith(vm, 3, 2)
+                vm._data.b.c = 4
+
+                waitForUpdate()
+                lu.assertEquals(watcher.value, 4)
+                spy.toHaveBeenCalledWith(vm, 4, 3)
             end
         )
 
@@ -106,7 +96,8 @@ describe(
             function()
                 print("deep")
                 local oldB
-                local watcher = Watcher.new(
+                local watcher =
+                    Watcher.new(
                     vm,
                     "b",
                     spy,
@@ -133,27 +124,24 @@ describe(
 
         it(
             "deep watch $data",
-            function(done)
+            function()
                 Watcher.new(
                     vm,
-                    "$data",
+                    "_data",
                     spy,
                     {
                         deep = true
                     }
                 )
                 vm.b.c = 3
-                waitForUpdate(
-                    function()
-                        spy.toHaveBeenCalledWith(vm._data, vm._data)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, vm._data, vm._data)
             end
         )
 
         it(
             "deep watch with circular references",
-            function(done)
+            function()
                 Watcher.new(
                     vm,
                     "b",
@@ -163,109 +151,90 @@ describe(
                     }
                 )
                 Vue.set(vm.b, "_", vm.b)
-                waitForUpdate(
-                    function()
-                        spy.toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count(), 1)
-                        vm.b._.c = 1
-                    end
-                ).thento(
-                    function()
-                        spy.toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count(), 2)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, vm.b, vm.b)
+                lu.assertEquals(#spy.calls, 1)
+                vm.b._.c = 1
+                waitForUpdate()
+
+                spy.toHaveBeenCalledWith(vm, vm.b, vm.b)
+                lu.assertEquals(#spy.calls, 2)
             end
         )
 
         it(
             "fire change for prop addition/deletion in non-deep mode",
-            function(done)
+            function()
                 Watcher.new(vm, "b", spy)
                 Vue.set(vm.b, "e", 123)
-                waitForUpdate(
-                    function()
-                        spy.toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count(), 1)
-                        Vue.delete(vm.b, "e")
-                    end
-                ).thento(
-                    function()
-                        expect(spy.calls.count(), 2)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, vm.b, vm.b)
+                lu.assertEquals(#spy.calls, 1)
+                Vue.delete(vm.b, "e")
+
+                waitForUpdate()
+                lu.assertEquals(#spy.calls, 2)
             end
         )
 
         it(
             "watch function",
-            function(done)
+            function()
                 local watcher =
                     Watcher.new(
                     vm,
-                    function()
-                        return this.a + this.b.d
+                    function(self)
+                        return self.a + self.b.d
                     end,
                     spy
                 )
-                expect(watcher.value, 5)
+                lu.assertEquals(watcher.value, 5)
                 vm.a = 2
-                waitForUpdate(
-                    function()
-                        spy.toHaveBeenCalledWith(6, 5)
-                        vm.b = {d = 2}
-                    end
-                ).thento(
-                    function()
-                        spy.toHaveBeenCalledWith(4, 6)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, 6, 5)
+                vm.b = {d = 2}
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm, 4, 6)
             end
         )
 
         it(
             "lazy mode",
-            function(done)
+            function()
                 local watcher =
                     Watcher.new(
                     vm,
-                    function()
-                        return this.a + this.b.d
+                    function(self)
+                        return self.a + self.b.d
                     end,
-                    null,
+                    nil,
                     {lazy = true}
                 )
-                expect(watcher.lazy, true)
-                expect(watcher.value).toBeUndefined()
-                expect(watcher.dirty, true)
+                lu.assertEquals(watcher.lazy, true)
+                lu.assertEquals(watcher.value, nil)
+                lu.assertEquals(watcher.dirty, true)
                 watcher.evaluate()
-                expect(watcher.value, 5)
-                expect(watcher.dirty, false)
+                lu.assertEquals(watcher.value, 5)
+                lu.assertEquals(watcher.dirty, false)
                 vm.a = 2
-                waitForUpdate(
-                    function()
-                        expect(watcher.value, 5)
-                        expect(watcher.dirty, true)
-                        watcher.evaluate()
-                        expect(watcher.value, 6)
-                        expect(watcher.dirty, false)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(watcher.value, 5)
+                lu.assertEquals(watcher.dirty, true)
+                watcher.evaluate()
+                lu.assertEquals(watcher.value, 6)
+                lu.assertEquals(watcher.dirty, false)
             end
         )
 
         it(
             "teardown",
-            function(done)
+            function()
                 local watcher = Watcher.new(vm, "b.c", spy)
                 watcher.teardown()
                 vm.b.c = 3
-                waitForUpdate(
-                    function()
-                        expect(watcher.active, false)
-                        spy.toHaventBeenCalled()
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(watcher.active, false)
+                spy.toHaventBeenCalled()
             end
         )
 
@@ -273,7 +242,7 @@ describe(
             "warn not support path",
             function()
                 Watcher.new(vm, "d.e + c", spy)
-                expect("Failed watching path =").toHaveBeenWarned()
+                lu.assertEquals("Failed watching path =").toHaveBeenWarned()
             end
         )
     end

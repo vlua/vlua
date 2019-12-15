@@ -6,6 +6,8 @@ local Init = require("instance.Init")
 local State = require("instance.State")
 local Events = require("instance.Events")
 local Lifecycle = require("instance.Lifecycle")
+local Observer = require("observer.Observer")
+local NextTick = require("util.NextTick")
 -- local Render = require("instance.Render")
 
 ---@class Vue
@@ -48,6 +50,11 @@ Vue.new = function(options)
     instance:_init(options)
     return instance
 end
+
+Vue.set = Observer.set
+Vue.get = Observer.get
+Vue.delete = Observer.del
+Vue.nextTick = NextTick.nextTick
 
 Init.initMixin(Vue)
 State.stateMixin(Vue)

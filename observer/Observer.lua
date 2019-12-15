@@ -8,6 +8,7 @@ local ipairs = ipairs
 local next = next
 local type = type
 local warn = print
+local rawset = rawset
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local class = Utils.class
@@ -19,12 +20,12 @@ end
 
 local V_GETTER = 1
 local V_SETTER = 2
---
+
 --[[
  * In some cases we may want to disable observation inside a component's
  * update computation.
-]] local _shouldObserve =
-    true
+]]
+local _shouldObserve = true
 
 ---@param value boolean
 local function toggleObserving(value)
@@ -50,6 +51,7 @@ end
 ---@field dep Dep
 ---@field vmCount integer @number of vms that have self object as root $data
 local Observer = class("Observer")
+
 --[[
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
@@ -58,7 +60,6 @@ local Observer = class("Observer")
 ---@param asRootData boolean
 ---@return Observer | void
 ---@alias ReactiveObject table
-
 local function observe(value, asRootData)
     if (not isObject(value)) --[[|| value instanceof VNode--]] then
         return
@@ -107,7 +108,7 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         end
         if not hasProperty then
             val = obj[key]
-            obj[key] = nil
+            rawset(obj, key, nil)
         end
     end
 
@@ -150,16 +151,15 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         setter(newVal)
         dep:notify()
     end
-end ---@param obj table
---
+end
 
 --[[
 * Walk through all properties and convert them into
 * getter/setters. This method should only be called when
 * value type is Object.
-]] local function walk(
-    obj,
-    mt)
+]]
+---@param obj table
+local function walk(obj, mt)
     for k, v in pairs(obj) do
         defineReactive(obj, k, nil, nil, nil, mt)
     end
@@ -168,7 +168,8 @@ end
 ---@param value ReactiveObject
 function Observer:constructor(value)
     self.value = value
-    self.dep = Dep.new()
+    local dep = Dep.new()
+    self.dep = dep
     self.vmCount = 0
 
     local mt = createPlainObjectMetatable()
@@ -184,6 +185,16 @@ function Observer:constructor(value)
     walk(value, mt)
     -- }
 
+    local properties = mt.__properties
+    mt.__newindex = function(self, key, newValue)
+        local property = properties[key]
+        if property then
+            property[V_SETTER](newValue)
+        else
+            defineReactive(value, key, newValue, nil, nil, mt)
+            dep:notify()
+        end
+    end
     setmetatable(value, mt)
 end ---@param target ReactiveObject
 --
@@ -230,20 +241,29 @@ end
 ---@param target ReactiveObjectlocal
 local function del(target, key)
     ---@type ReactiveMetatable
-    local mt = getmetatable(target)
-    if config.env ~= "production" and (not mt or not mt.__ob__) then
+    if config.env ~= "production" and not isObject(target) then
         warn("Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}")
     end
 
-    local ob = mt.__ob__
+    local ob
+    local mt = getmetatable(target)
+    if mt then
+        ob = mt.__ob__
+    end
+
     if (target._isVue or (ob and ob.vmCount ~= 0)) then
         if config.env ~= "production" then
             warn("Avoid deleting properties on a Vue instance or its root $data " + "- just set it to null.")
             return
         end
     end
+    if (target[key] == nil) then
+        return
+    end
     target[key] = nil
-    ob.dep:notify()
+    if ob then
+        ob.dep:notify()
+    end
 end
 
 Observer.toggleObserving = toggleObserving

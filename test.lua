@@ -139,6 +139,18 @@ function lu.createSpy(name)
     return spy
 end
 
+function lu.spyOn(target, name)
+    local spy = lu.createSpy(name)
+    local call = target[name]
+    local spycall = spy.__call
+
+    spy.__call = function(_,...)
+        spycall(...)
+        return call(...)
+    end
+    target[name] = spy
+end
+
 function lu.createSpyObj(name, fields)
     local spy = {}
     spy.__calls = {}

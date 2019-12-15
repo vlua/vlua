@@ -118,9 +118,8 @@ end
 function Watcher:get()
     pushTarget(self)
     local value
-    local vm = self.vm
     -- try {
-    value = self.getter(vm)
+    value = self.getter(self.vm)
     -- } catch (e) {
     --   if (self.user) {
     --     handleError(e, vm, 'getter for watcher "${self.expression}"')

@@ -9,7 +9,8 @@ local Lifecycle = require("instance.Lifecycle")
 local Observer = require("observer.Observer")
 local NextTick = require("util.NextTick")
 -- local Render = require("instance.Render")
-
+local Util = require("util.Util")
+local createDeinfePropertyObject = Util.createDeinfePropertyObject
 ---@class Vue
 local Vue = {}
 

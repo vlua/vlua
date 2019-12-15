@@ -191,8 +191,9 @@ function lu.createSpyObj(name, fields)
     return spy
 end
 
--- require("test.unit.modules.observer.TestDep")
+require("test.unit.modules.observer.TestDep")
 require("test.unit.modules.observer.TestWatcher")
+require("test.unit.modules.observer.TestObserver")
 
 local runner = lu.LuaUnit.new()
 runner:setOutputType("tap")

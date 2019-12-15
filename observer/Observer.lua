@@ -13,6 +13,8 @@ local isObject = function(v)
     return type(v) == "table"
 end
 
+local newObserver
+
 local V_GETTER = 1
 local V_SETTER = 2
 local V_GETTER_IMPL = 3
@@ -48,7 +50,7 @@ end
 ---@field value ReactiveObject
 ---@field dep Dep
 ---@field vmCount integer @number of vms that have self object as root $data
-local Observer = class("Observer")
+local newObserver
  --
 
 ---@alias ReactiveObject table
@@ -72,7 +74,7 @@ local function observe(value, asRootData)
         ob = mt.__ob__
     end
     if (ob == nil and _shouldObserve and isPlainObject(value)) and not value._isVue then
-        ob = Observer.new(value)
+        ob = newObserver(value)
     end
     if (asRootData and ob) then
         ob.vmCount = ob.vmCount + 1
@@ -152,7 +154,8 @@ local function walk(obj)
 end
 
 ---@param value ReactiveObject
-function Observer:constructor(value)
+newObserver = function(value)
+    local self = {}
     self.value = value
     self.dep = Dep.new()
     self.vmCount = 0
@@ -206,6 +209,8 @@ function Observer:constructor(value)
             return i, valueStore and valueStore[V_GETTER](valueStore)
         end
     end
+
+    return self
 end
  --
 

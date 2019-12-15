@@ -3,6 +3,8 @@ local tinsert = table.insert
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local Lang = require("util.Lang")
+local next = next
+
 local emptyObject = {}
 
 --- 基于原型创建一个对象
@@ -14,10 +16,71 @@ local function createObject(prototype)
     end
 end
 
+local function createDeinfePropertyObject()
+    local properties = {}
+    local instance = {__properties = properties}
+
+    instance.__index = function(self, key)
+        local property = properties[key]
+        if property then
+            return property[1](self)
+        end
+    end
+
+    instance.__newindex = function(self, key, value)
+        local property = properties[key]
+        if property then
+            property[2](self, value)
+        else
+            properties[key] = {
+                function()
+                    return value
+                end,
+                function(newValue)
+                    value = newValue
+                end
+            }
+        end
+    end
+
+    instance.__pairs = function()
+        local key, valueStore
+        return function()
+            key, valueStore = next(properties, key)
+            return key, valueStore and valueStore[1](valueStore)
+        end
+    end
+    
+    instance.__ipairs = function()
+        local i = 1
+        local valueStore
+        return function()
+            valueStore = properties[i]
+            i = i + 1
+            return i, valueStore and valueStore[1](valueStore)
+        end
+    end
+
+    instance.__len = function()
+        return #properties
+    end
+    setmetatable(instance, instance)
+    return instance
+end
+
+--[[ eslint-disable no-unused-vars ]]
+--[[*
+ * Perform no operation.
+ * Stubbing args to make Flow happy without leaving useless transpiled code
+ * with ...rest (https:--flow.org/blog/2017/05/07/Strict-Function-Call-Arity/).
+ ]]
+ local function noop(a, b, c)
+ end
+
 --- 创建一个属性
 local function defineProperty(target, key, getter, setter)
     local properties = target.__properties
-    properties[key] = {getter, setter}
+    properties[key] = {getter or noop, setter or noop}
 end
 
 -- These helpers produce better VM code in JS engines due to their
@@ -249,14 +312,6 @@ local function toObject(arr)
     return res
 end
 
---[[ eslint-disable no-unused-vars ]]
---[[*
- * Perform no operation.
- * Stubbing args to make Flow happy without leaving useless transpiled code
- * with ...rest (https:--flow.org/blog/2017/05/07/Strict-Function-Call-Arity/).
- ]]
-local function noop(a, b, c)
-end
 
 --[[*
  * Always return false.
@@ -366,5 +421,6 @@ return {
     indexOf = indexOf,
     concat = concat,
     isReserved = Lang.isReserved,
-    isServerRendering = isServerRendering
+    isServerRendering = isServerRendering,
+    createDeinfePropertyObject = createDeinfePropertyObject
 }

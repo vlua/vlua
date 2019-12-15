@@ -1,7 +1,6 @@
-
-local config = require('config')
-local Watcher = require('observer.Watcher')
-local Observer = require('observer.Observer')
+local config = require("config")
+local Watcher = require("observer.Watcher")
+local Observer = require("observer.Observer")
 local Perf = require("util.Perf")
 local Util = require("util.Util")
 local Events = require("instance.Events")
@@ -13,19 +12,12 @@ local toggleObserving = Observer.toggleObserving
 local tinsert, tremove = table.insert, table.remove
 
 local callHook = Events.callHook
-local
-    warn,
-    noop,
-    remove,
-    emptyObject,
-    validateProp
-=
+local warn, noop, remove, emptyObject, validateProp =
     Util.warn,
     Util.noop,
     Util.remove,
     Util.emptyObject,
     Util.validateProp
-
 
 local activeInstance = nil
 local isUpdatingChildComponent = false
@@ -43,7 +35,7 @@ local function setActiveInstance(vm)
 end
 
 ---@param vm Component
-local function initLifecycle (vm)
+local function initLifecycle(vm)
     local options = vm._options
 
     -- locate first non-abstract parent
@@ -70,7 +62,7 @@ local function initLifecycle (vm)
 end
 
 ---@param Vue Vue
-local function lifecycleMixin (Vue)
+local function lifecycleMixin(Vue)
     ---@param vnode VNode
     ---@param hydrating boolean
     function Vue.prototype:_update(vnode, hydrating)
@@ -117,7 +109,7 @@ local function lifecycleMixin (Vue)
         if (vm._isBeingDestroyed) then
             return
         end
-        callHook(vm, 'beforeDestroy')
+        callHook(vm, "beforeDestroy")
         vm._isBeingDestroyed = true
         -- remove self from parent
         local parent = vm._parent
@@ -142,15 +134,15 @@ local function lifecycleMixin (Vue)
         -- invoke destroy hooks on current rendered tree
         vm:__patch__(vm._vnode, nil)
         -- fire destroyed hook
-        callHook(vm, 'destroyed')
+        callHook(vm, "destroyed")
         -- turn off all instance listeners.
         vm:_off()
         -- remove __vue__ reference
-        if (vm._el)  then
+        if (vm._el) then
             vm._el.__vue__ = nil
         end
         -- release circular reference (#6759)
-        if (vm._vnode)  then
+        if (vm._vnode) then
             vm._vnode.parent = nil
         end
     end
@@ -159,27 +151,19 @@ local function lifecycleMixin (Vue)
     ---@param el string | Element
     ---@param hydrating boolean
     ---@return Component
-    function Vue.prototype:_mount (
-        el,
-        hydrating
-    )
+    function Vue.prototype:_mount(el, hydrating)
         return mountComponent(self, el, hydrating)
     end
-
 end
 
 ---@param vm Component
 ---@param el Element
 ---@param hydrating boolean
 ---@return Component
-mountComponent = function (
-    vm,
-    el,
-    hydrating
-)
+mountComponent = function(vm, el, hydrating)
     vm._el = el
     if (not vm._render) then
-      vm._render = noop
+        vm._render = noop
     --   if (config.env ~= 'production')  then
     --       warn(
     --         'Failed to mount component: template or render function not defined.',
@@ -187,26 +171,26 @@ mountComponent = function (
     --       )
     --   end
     end
-    callHook(vm, 'beforeMount')
+    callHook(vm, "beforeMount")
 
     local updateComponent
     --[[ istanbul ignore if ]]
-    if (config.env ~= 'production' and config.performance and mark) then
-    updateComponent = function()
+    if (config.env ~= "production" and config.performance and mark) then
+        updateComponent = function()
             local name = vm._name
             local id = vm._uid
-            local startTag = 'vue-perf-start:' .. id
-            local endTag = 'vue-perf-end:' .. id
+            local startTag = "vue-perf-start:" .. id
+            local endTag = "vue-perf-end:" .. id
 
             mark(startTag)
             local vnode = vm:_render()
             mark(endTag)
-            measure('vue ' .. name .. ' render', startTag, endTag)
+            measure("vue " .. name .. " render", startTag, endTag)
 
             mark(startTag)
             vm:_update(vnode, hydrating)
             mark(endTag)
-            measure('vue ' .. name .. ' patch', startTag, endTag)
+            measure("vue " .. name .. " patch", startTag, endTag)
         end
     else
         updateComponent = function()
@@ -217,20 +201,26 @@ mountComponent = function (
     -- we set self to vm._watcher inside the watcher's constructor
     -- since the watcher's initial patch may call $forceUpdate (e.g. inside child
     -- component's mounted hook), which relies on vm._watcher being already defined
-    Watcher.new(vm, updateComponent, noop, {
-        before = function()
-            if (vm._isMounted and not vm._isDestroyed) then
-                callHook(vm, 'beforeUpdate')
+    Watcher.new(
+        vm,
+        updateComponent,
+        noop,
+        {
+            before = function()
+                if (vm._isMounted and not vm._isDestroyed) then
+                    callHook(vm, "beforeUpdate")
+                end
             end
-        end
-    }, true --[[ isRenderWatcher ]])
+        },
+        true --[[ isRenderWatcher ]]
+    )
     hydrating = false
 
     -- manually mounted instance, call mounted on self
     -- mounted is called for render-created child components in its inserted hook
     if (vm._vnode == nil) then
         vm._isMounted = true
-        callHook(vm, 'mounted')
+        callHook(vm, "mounted")
     end
     return vm
 end
@@ -240,14 +230,8 @@ end
 ---@param listeners Object
 ---@param parentVnode MountedComponentVNode
 ---@param renderChildren VNode[]
-local function updateChildComponent (
-    vm,
-    propsData,
-    listeners,
-    parentVnode,
-    renderChildren
-)
-    if (config.env ~= 'production') then
+local function updateChildComponent(vm, propsData, listeners, parentVnode, renderChildren)
+    if (config.env ~= "production") then
         isUpdatingChildComponent = true
     end
 
@@ -259,20 +243,18 @@ local function updateChildComponent (
     -- "$stable" marker.
     local newScopedSlots = parentVnode.data.scopedSlots
     local oldScopedSlots = vm._scopedSlots
-    local hasDynamicScopedSlot = not not (
-        (newScopedSlots and not newScopedSlots._stable) or
+    local hasDynamicScopedSlot =
+        not (not ((newScopedSlots and not newScopedSlots._stable) or
         (oldScopedSlots ~= emptyObject and not oldScopedSlots._stable) or
-        (newScopedSlots and vm._scopedSlots._key ~= newScopedSlots._key)
-    )
+        (newScopedSlots and vm._scopedSlots._key ~= newScopedSlots._key)))
 
     -- Any static slot children from the parent may have changed during parent's
     -- update. Dynamic scoped slots may also have changed. In such cases, a forced
     -- update is necessary to ensure correctness.
-    local needsForceUpdate = not not (
-        renderChildren or               -- has new static slots
-        vm._options._renderChildren or  -- has old static slots
-        hasDynamicScopedSlot
-    )
+    local needsForceUpdate =
+        not (not (renderChildren or -- has new static slots
+        vm._options._renderChildren or -- has old static slots
+        hasDynamicScopedSlot))
 
     vm._options._parentVnode = parentVnode
     vm._vnode = parentVnode -- update vm's placeholder node without re-render
@@ -315,15 +297,17 @@ local function updateChildComponent (
         vm:_forceUpdate()
     end
 
-    if (config.env ~= 'production') then
+    if (config.env ~= "production") then
         isUpdatingChildComponent = false
     end
 end
 
 ---@param vm Component
-isInInactiveTree = function(vm) 
+isInInactiveTree = function(vm)
     while vm do
-    if (vm._inactive) then return true end
+        if (vm._inactive) then
+            return true
+        end
         vm = vm._parent
     end
     return false
@@ -331,27 +315,27 @@ end
 
 ---@param vm Component
 ---@param direct boolean
-local function activateChildComponent (vm, direct) 
+local function activateChildComponent(vm, direct)
     if (direct) then
         vm._directInactive = false
         if (isInInactiveTree(vm)) then
             return
         end
-        elseif (vm._directInactive) then
-            return
-        end
-        if (vm._inactive or vm._inactive == nil) then
+    elseif (vm._directInactive) then
+        return
+    end
+    if (vm._inactive or vm._inactive == nil) then
         vm._inactive = false
         for i = 1, #vm._children do
             activateChildComponent(vm._children[i])
         end
-        callHook(vm, 'activated')
+        callHook(vm, "activated")
     end
 end
 
 ---@param vm Component
 ---@param direct boolean
-local function deactivateChildComponent (vm, direct)
+local function deactivateChildComponent(vm, direct)
     if (direct) then
         vm._directInactive = true
         if (isInInactiveTree(vm)) then
@@ -363,16 +347,16 @@ local function deactivateChildComponent (vm, direct)
         for i = 1, #vm._children do
             deactivateChildComponent(vm._children[i])
         end
-        callHook(vm, 'deactivated')
+        callHook(vm, "deactivated")
     end
 end
 
 return {
-  initLifecycle = initLifecycle,
-  isUpdatingChildComponent = isUpdatingChildComponent,
-  activateChildComponent = activateChildComponent,
-  lifecycleMixin = lifecycleMixin,
-  mountComponent = mountComponent,
-  updateChildComponent = updateChildComponent,
-  deactivateChildComponent = deactivateChildComponent
+    initLifecycle = initLifecycle,
+    isUpdatingChildComponent = isUpdatingChildComponent,
+    activateChildComponent = activateChildComponent,
+    lifecycleMixin = lifecycleMixin,
+    mountComponent = mountComponent,
+    updateChildComponent = updateChildComponent,
+    deactivateChildComponent = deactivateChildComponent
 }

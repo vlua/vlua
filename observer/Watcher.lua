@@ -18,7 +18,6 @@ local traverse = Traverse.traverse
 local class = Utils.class
 local queueWatcher = Scheduler.queueWatcher
 
-
 local uid = 0
 
 ---@class WatcherOptions
@@ -64,31 +63,25 @@ end
 ---@param options WatcherOptions
 ---@param isRenderWatcher boolean
 ---@return Watcher
-function Watcher:constructor(
-    vm,
-    expOrFn,
-    cb,
-    options,
-    isRenderWatcher
-  )
+function Watcher:constructor(vm, expOrFn, cb, options, isRenderWatcher)
     self.vm = vm
     if (isRenderWatcher) then
-      vm._watcher = self
+        vm._watcher = self
     end
     tinsert(vm._watchers, self)
     -- options
     if (options) then
-      self.deep = options.deep
-      self.user = options.user
-      self.lazy = options.lazy
-      self.sync = options.sync
-      self.before = options.before
-     else
-      self.deep = false
-      self.user = false
-      self.lazy = false
-      self.sync = false
-     end
+        self.deep = options.deep
+        self.user = options.user
+        self.lazy = options.lazy
+        self.sync = options.sync
+        self.before = options.before
+    else
+        self.deep = false
+        self.user = false
+        self.lazy = false
+        self.sync = false
+    end
     self.cb = cb
     uid = uid + 1
     self.id = uid -- uid for batching
@@ -98,24 +91,22 @@ function Watcher:constructor(
     self.newDeps = {}
     self.depIds = {}
     self.newDepIds = {}
-    self.expression = config.env ~= 'production'
-      and expOrFn
-      or ''
+    self.expression = config.env ~= "production" and expOrFn or ""
     -- parse expression for getter
-    if (type(expOrFn) == 'function') then
-      self.getter = expOrFn
+    if (type(expOrFn) == "function") then
+        self.getter = expOrFn
     else
-      self.getter = parsePath(expOrFn)
-      if (not self.getter) then
-        self.getter = function()end
-        if config.env ~= 'production' then
-            warn(
-          'Failed watching path: "${expOrFn}" ' +
-          'Watcher only accepts simple dot-delimited paths. ' +
-          'For full control, use a function instead.',
-          vm
-        )
-          end
+        self.getter = parsePath(expOrFn)
+        if (not self.getter) then
+            self.getter = function()
+            end
+            if config.env ~= "production" then
+                warn(
+                    'Failed watching path: "${expOrFn}" ' + "Watcher only accepts simple dot-delimited paths. " +
+                        "For full control, use a function instead.",
+                    vm
+                )
+            end
         end
     end
     self.value = self.lazy or self:get()
@@ -127,7 +118,7 @@ function Watcher:get()
     local value
     local vm = self.vm
     -- try {
-        value = self.getter(vm)
+    value = self.getter(vm)
     -- } catch (e) {
     --   if (self.user) {
     --     handleError(e, vm, 'getter for watcher "${self.expression}"')
@@ -135,26 +126,26 @@ function Watcher:get()
     --     throw e
     --   }
     -- } finally {
-        -- "touch" every property so they are all tracked as
-        -- dependencies for deep watching
-        if (self.deep) then
-            traverse(value)
-        end
-        popTarget()
-        self:cleanupDeps()
+    -- "touch" every property so they are all tracked as
+    -- dependencies for deep watching
+    if (self.deep) then
+        traverse(value)
+    end
+    popTarget()
+    self:cleanupDeps()
     -- }
     return value
 end
 
 -- Add a dependency to self directive.
 ---@param dep Dep
-function Watcher:addDep(dep) 
+function Watcher:addDep(dep)
     local id = dep.id
     if (not self.newDepIds[id]) then
         self.newDepIds[id] = true
         tinsert(self.newDeps, dep)
         if (not self.depIds[id]) then
-        dep:addSub(self)
+            dep:addSub(self)
         end
     end
 end
@@ -162,11 +153,11 @@ end
 --[[
 * Clean up for dependency collection.
 --]]
-function Watcher:cleanupDeps() 
-    for i = #self.deps , 1, -1 do
+function Watcher:cleanupDeps()
+    for i = #self.deps, 1, -1 do
         local dep = self.deps[i]
         if (not self.newDepIds[dep.id]) then
-        dep:removeSub(self)
+            dep:removeSub(self)
         end
     end
     local tmp = self.depIds
@@ -200,23 +191,19 @@ end
 function Watcher:run()
     if (self.active) then
         local value = self:get()
-        if (
-            value ~= self.value or
-            -- Deep watchers and watchers on Object/Arrays should fire even
-            -- when the value is the same, because the value may
-            -- have mutated.
-            type(value) == "table" or
-            self.deep
-        ) then
+        if (value ~= self.value or -- Deep watchers and watchers on Object/Arrays should fire even
+                -- when the value is the same, because the value may
+                -- have mutated.
+                type(value) == "table" or self.deep) then
             -- set new value
             local oldValue = self.value
             self.value = value
             if (self.user) then
-            --   try {
+                --   } catch (e) {
+                --     handleError(e, self.vm, 'callback for watcher "${self.expression}"')
+                --   }
+                --   try {
                 self.cb(self.vm, value, oldValue)
-            --   } catch (e) {
-            --     handleError(e, self.vm, 'callback for watcher "${self.expression}"')
-            --   }
             else
                 self.cb(self.vm, value, oldValue)
             end
@@ -228,20 +215,20 @@ end
 * Evaluate the value of the watcher.
 * This only gets called for lazy watchers.
 --]]
-function Watcher:evaluate ()
+function Watcher:evaluate()
     self.value = self:get()
     self.dirty = false
 end
 
 --- Depend on all deps collected by self watcher.
-function Watcher:depend ()
+function Watcher:depend()
     for i = #self.deps, 1, -1 do
         self.deps[i]:depend()
     end
 end
 
 --- Remove self from all dependencies' subscriber list.
-function Watcher:teardown ()
+function Watcher:teardown()
     if (self.active) then
         -- remove self from vm's watcher list
         -- self is a somewhat expensive operation so we skip it

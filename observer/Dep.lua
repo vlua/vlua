@@ -37,15 +37,17 @@ end
 
 function Dep:depend()
     if Dep.target then
-      Dep.target:addDep(self)
+        Dep.target:addDep(self)
     end
 end
 
-local sortSub = function(a, b) return a.id < b.id end
+local sortSub = function(a, b)
+    return a.id < b.id
+end
 function Dep:notify()
     -- stabilize the subscriber list first
     local subs = slice(self.subs)
-    if (config.env ~= 'production' and not config.async) then
+    if (config.env ~= "production" and not config.async) then
         -- subs aren't sorted in scheduler if not running async
         -- we need to sort them now to make sure they fire in correct
         -- order

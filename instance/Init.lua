@@ -17,10 +17,13 @@ local initEvents = Events.initEvents
 local mark, measure = Perf.mark, Perf.measure
 local initLifecycle = Lifecycle.initLifecycle
 local initProvide, initInjections = Inject.initProvide, Inject.initInjections
-local extend, mergeOptions, formatComponentName, createObject = Util.extend, Options.mergeOptions, Util.formatComponentName, Util.createObject
+local extend, mergeOptions, formatComponentName, createObject =
+    Util.extend,
+    Options.mergeOptions,
+    Util.formatComponentName,
+    Util.createObject
 
 local uid = 0
-
 
 local initMixin
 local initInternalComponent
@@ -28,7 +31,7 @@ local resolveConstructorOptions
 local resolveModifiedOptions
 
 ---@param Vue Vue
-initMixin = function (Vue)
+initMixin = function(Vue)
     function Vue.prototype:_init(options)
         ---@type Component
         local vm = self
@@ -38,9 +41,9 @@ initMixin = function (Vue)
 
         local startTag, endTag
         --[[ istanbul ignore if ]]
-        if (config.env ~= 'production' and config.performance and mark) then
-            startTag = 'vue-perf-start:${vm._uid}'
-            endTag = 'vue-perf-end:${vm._uid}'
+        if (config.env ~= "production" and config.performance and mark) then
+            startTag = "vue-perf-start:${vm._uid}"
+            endTag = "vue-perf-end:${vm._uid}"
             mark(startTag)
         end
 
@@ -53,14 +56,10 @@ initMixin = function (Vue)
             -- internal component options needs special treatment.
             initInternalComponent(vm, options)
         else
-            vm._options = mergeOptions(
-            resolveConstructorOptions(getmetatable(vm)),
-            options or {},
-            vm
-            )
+            vm._options = mergeOptions(resolveConstructorOptions(getmetatable(vm)), options or {}, vm)
         end
         --[[ istanbul ignore else ]]
-        if (config.env ~= 'production') then
+        if (config.env ~= "production") then
             initProxy(vm)
         else
             vm._renderProxy = vm
@@ -70,17 +69,17 @@ initMixin = function (Vue)
         initLifecycle(vm)
         initEvents(vm)
         --initRender(vm)
-        callHook(vm, 'beforeCreate')
+        callHook(vm, "beforeCreate")
         initInjections(vm) -- resolve injections before data/props
         initState(vm)
         initProvide(vm) -- resolve provide after data/props
-        callHook(vm, 'created')
+        callHook(vm, "created")
 
         --[[ istanbul ignore if ]]
-        if (config.env ~= 'production' and config.performance and mark) then
+        if (config.env ~= "production" and config.performance and mark) then
             vm._name = formatComponentName(vm, false)
             mark(endTag)
-            measure('vue ${vm._name} init', startTag, endTag)
+            measure("vue ${vm._name} init", startTag, endTag)
         end
 
         if vm._options.el then
@@ -91,7 +90,7 @@ end
 
 ---@param vm Component
 ---@param options InternalComponentOptions
-initInternalComponent = function (vm, options)
+initInternalComponent = function(vm, options)
     local opts = createObject(getmetatable(vm).options)
     vm._options = opts
     -- doing self because it's faster than dynamic enumeration.
@@ -112,7 +111,7 @@ initInternalComponent = function (vm, options)
 end
 
 ---@param Ctor Component
-resolveConstructorOptions = function (Ctor) 
+resolveConstructorOptions = function(Ctor)
     local options = Ctor.options
     if (Ctor.super) then
         local superOptions = resolveConstructorOptions(Ctor.super)
@@ -138,14 +137,14 @@ resolveConstructorOptions = function (Ctor)
 end
 
 ---@param Component
-resolveModifiedOptions = function (Ctor)
+resolveModifiedOptions = function(Ctor)
     local modified
     local latest = Ctor.options
     local sealed = Ctor.sealedOptions
     for key, value in pairs(latest) do
         if (value ~= sealed[key]) then
             if (not modified) then
-            modified = {}
+                modified = {}
             end
             modified[key] = value
         end

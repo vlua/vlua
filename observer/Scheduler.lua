@@ -6,18 +6,7 @@ local NextTick = require("util.NextTick")
 local Events = require("instance.Events")
 local callHook = Events.callHook
 
-local
-  warn,
-  nextTick,
-  devtools,
-  inBrowser,
-  isIE
-= Util.warn,
-NextTick.nextTick,
-Util.devtools,
-Util.inBrowser,
-Util.isIE
-
+local warn, nextTick, devtools, inBrowser, isIE = Util.warn, NextTick.nextTick, Util.devtools, Util.inBrowser, Util.isIE
 
 local slice = Utils.slice
 local splice = Utils.splice
@@ -46,12 +35,12 @@ local callActivatedHooks
 --[[
  * Reset the scheduler's state.
  --]]
-local function resetSchedulerState() 
+local function resetSchedulerState()
     index = 1
     queue = {}
     activatedChildren = {}
     has = {}
-    if (config.env ~= 'production') then
+    if (config.env ~= "production") then
         circular = {}
     end
     waiting = false
@@ -70,13 +59,13 @@ local function getNow()
     return os.clock()
 end
 
-local function compareQueue(a,b)
+local function compareQueue(a, b)
     return a.id < b.id
 end
 --[[
  * Flush both queues and run the watchers.
  --]]
-local function flushSchedulerQueue ()
+local function flushSchedulerQueue()
     currentFlushTimestamp = getNow()
     flushing = true
     ---@type Watcher
@@ -105,15 +94,13 @@ local function flushSchedulerQueue ()
         has[id] = nil
         watcher:run()
         -- in dev build, check and stop circular updates.
-        if (config.env ~= 'production' and has[id] ~= nil) then
+        if (config.env ~= "production" and has[id] ~= nil) then
             circular[id] = (circular[id] or 0) + 1
             if (circular[id] > MAX_UPDATE_COUNT) then
                 warn(
-                    'You may have an infinite update loop ' + (
-                    watcher.user
-                        and 'in watcher with expression "${watcher.expression}"'
-                        or 'in a component render function.'
-                    ),
+                    "You may have an infinite update loop " +
+                        (watcher.user and 'in watcher with expression "${watcher.expression}"' or
+                            "in a component render function."),
                     watcher.vm
                 )
                 break
@@ -134,16 +121,16 @@ local function flushSchedulerQueue ()
     -- devtool hook
     --[[ istanbul ignore if --]]
     if (devtools and config.devtools) then
-        devtools.emit('flush')
+        devtools.emit("flush")
     end
 end
 
-callUpdatedHooks = function  (queue) 
-    for i = #queue, 1 , -1 do
+callUpdatedHooks = function(queue)
+    for i = #queue, 1, -1 do
         local watcher = queue[i]
         local vm = watcher.vm
         if (vm._watcher == watcher and vm._isMounted and not vm._isDestroyed) then
-            callHook(vm, 'updated')
+            callHook(vm, "updated")
         end
     end
 end
@@ -152,19 +139,19 @@ end
  * Queue a kept-alive component that was activated during patch.
  * The queue will be processed after the entire tree has been patched.
  --]]
- ---@param vm Component
-local function queueActivatedComponent (vm) 
+---@param vm Component
+local function queueActivatedComponent(vm)
     -- setting _inactive to false here so that a render function can
     -- rely on checking whether it's in an inactive tree (e.g. router-view)
     vm._inactive = false
     tinsert(activatedChildren, vm)
 end
 local activateChildComponent
-callActivatedHooks = function (queue) 
+callActivatedHooks = function(queue)
     if not activateChildComponent then
         activateChildComponent = require("instance.Lifecycle").activateChildComponent
     end
-    for  i = 1 , #queue do
+    for i = 1, #queue do
         queue[i]._inactive = true
         activateChildComponent(queue[i], true --[[ true --]])
     end
@@ -175,33 +162,33 @@ end
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
  --]]
- ---@param watcher Watcher
-local function queueWatcher (watcher) 
-  local id = watcher.id
-  if (has[id] == nil) then
-    has[id] = true
-    if (not flushing) then
-        tinsert(queue, watcher)
-    else
-      -- if already flushing, splice the watcher based on its id
-      -- if already past its id, it will be run next immediately.
-      local i = queue.length - 1
-      while (i > index and queue[i].id > watcher.id) do
-        i = i - 1
-      end
-      splice(queue, i + 1, 0, watcher)
-    end
-    -- queue the flush
-    if (not waiting) then
-      waiting = true
+---@param watcher Watcher
+local function queueWatcher(watcher)
+    local id = watcher.id
+    if (has[id] == nil) then
+        has[id] = true
+        if (not flushing) then
+            tinsert(queue, watcher)
+        else
+            -- if already flushing, splice the watcher based on its id
+            -- if already past its id, it will be run next immediately.
+            local i = queue.length - 1
+            while (i > index and queue[i].id > watcher.id) do
+                i = i - 1
+            end
+            splice(queue, i + 1, 0, watcher)
+        end
+        -- queue the flush
+        if (not waiting) then
+            waiting = true
 
-      if (config.env ~= 'production' and not config.async) then
-        flushSchedulerQueue()
-        return
-      end
-      nextTick(flushSchedulerQueue)
+            if (config.env ~= "production" and not config.async) then
+                flushSchedulerQueue()
+                return
+            end
+            nextTick(flushSchedulerQueue)
+        end
     end
-end
 end
 
 return {

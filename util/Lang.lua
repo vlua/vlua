@@ -1,5 +1,3 @@
-
-
 local find, format, sub, gsub = string.find, string.format, string.sub, string.gsub
 local tonumber = tonumber
 local tostring = tostring
@@ -18,14 +16,15 @@ local min = math.min
 -- Check if a string starts with $ or _
 ---@param str string
 ---@return boolean
-local function isReserved (str)
-  local c = string.byte(str, 1)
-  return c == 0x24 or c == 0x5F
+local function isReserved(str)
+    local c = string.byte(str, 1)
+    return c == 0x24 or c == 0x5F
 end
 
-
 local function parse_path(path)
-    if not path or path == '' then error('invalid path:' .. tostring(path)) end
+    if not path or path == "" then
+        error("invalid path:" .. tostring(path))
+    end
     --print('start to parse ' .. path)
     local result = {}
     local i, n = 1, #path
@@ -35,11 +34,17 @@ local function parse_path(path)
             --print('"'.. sub(path, i, s and s - 1).. '"')
             tinsert(result, sub(path, i, s and s - 1))
         end
-        if not s then break end
-        if split1 == '[' then
-            if split2 ~= ']' then error('invalid path:' .. path) end
+        if not s then
+            break
+        end
+        if split1 == "[" then
+            if split2 ~= "]" then
+                error("invalid path:" .. path)
+            end
             key = tonumber(key)
-            if not key then error('invalid path:' .. path) end
+            if not key then
+                error("invalid path:" .. path)
+            end
             --print(key)
             tinsert(result, key)
         else
@@ -55,13 +60,13 @@ end
 ---@param path string
 local function parsePath(path)
     local segments = parse_path(path)
-    return function (obj)
+    return function(obj)
         for i = 1, #segments do
-        if (not obj) then
-            return
+            if (not obj) then
+                return
+            end
+            obj = obj[segments[i]]
         end
-        obj = obj[segments[i]]
-    end
         return obj
     end
 end
@@ -95,7 +100,7 @@ local function class(name)
     end
     return cls
 end
-  
+
 -- http://phi.lho.free.fr/programming/TestLuaArray.lua.html
 -- TODO move this to helpers
 -- Emulate the splice function of JS (or array_splice of PHP)
@@ -103,41 +108,45 @@ end
 -- http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:Array:splice
 -- I use 1-based indices, of course.
 local function splice(t, index, howMany, ...)
-	local removed = {}
-	local tableSize = #t -- Table size
+    local removed = {}
+    local tableSize = #t -- Table size
     -- Lua 5.0 handling of vararg...
     local args = {...}
-	local argNb = #args -- Number of elements to insert
-	-- Check parameter validity
-	if index < 1 then index = 1 end
-	if howMany < 0 then howMany = 0 end
-	if index > tableSize then
-		index = tableSize + 1 -- At end
-		howMany = 0 -- Nothing to delete
-	end
-	if index + howMany - 1 > tableSize then
-		howMany = tableSize - index + 1 -- Adjust to number of elements at index
-	end
+    local argNb = #args -- Number of elements to insert
+    -- Check parameter validity
+    if index < 1 then
+        index = 1
+    end
+    if howMany < 0 then
+        howMany = 0
+    end
+    if index > tableSize then
+        index = tableSize + 1 -- At end
+        howMany = 0 -- Nothing to delete
+    end
+    if index + howMany - 1 > tableSize then
+        howMany = tableSize - index + 1 -- Adjust to number of elements at index
+    end
 
-	local argIdx = 1 -- Index in arg
-	-- Replace min(howMany, argNb) entries
-	for pos = index, index + min(howMany, argNb) - 1 do
-		-- Copy removed entry
-		tinsert(removed, t[pos])
-		-- Overwrite entry
-		t[pos] = args[argIdx]
-		argIdx = argIdx + 1
-	end
-	argIdx = argIdx - 1
-	-- If howMany > argNb, remove extra entries
-	for i = 1, howMany - argNb do
-		tinsert(removed, tremove(t, index + argIdx))
-	end
-	-- If howMany < argNb, insert remaining new entries
-	for i = argNb - howMany, 1, -1 do
-		tinsert(t, index + howMany, args[argIdx + i])
-	end
-	return removed
+    local argIdx = 1 -- Index in arg
+    -- Replace min(howMany, argNb) entries
+    for pos = index, index + min(howMany, argNb) - 1 do
+        -- Copy removed entry
+        tinsert(removed, t[pos])
+        -- Overwrite entry
+        t[pos] = args[argIdx]
+        argIdx = argIdx + 1
+    end
+    argIdx = argIdx - 1
+    -- If howMany > argNb, remove extra entries
+    for i = 1, howMany - argNb do
+        tinsert(removed, tremove(t, index + argIdx))
+    end
+    -- If howMany < argNb, insert remaining new entries
+    for i = argNb - howMany, 1, -1 do
+        tinsert(t, index + howMany, args[argIdx + i])
+    end
+    return removed
 end
 
 local function instanceof(obj, cls)
@@ -151,5 +160,5 @@ return {
     slice = slice,
     splice = splice,
     isReserved = isReserved,
-    instanceof = instanceof,
+    instanceof = instanceof
 }

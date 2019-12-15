@@ -28,22 +28,18 @@ describe(
 
         it(
             "path",
-            function(done)
+            function()
                 local watcher = Watcher.new(vm, "b.c", spy)
-                expect(watcher.value).toBe(2)
+                lu.assertEquals(watcher.value, 2)
                 vm.b.c = 3
-                waitForUpdate(
-                    function()
-                        expect(watcher.value).toBe(3)
-                        expect(spy).toHaveBeenCalledWith(3, 2)
-                        vm.b = {c = 4} -- swapping the object
-                    end
-                ).thento(
-                    function()
-                        expect(watcher.value).toBe(4)
-                        expect(spy).toHaveBeenCalledWith(4, 3)
-                    end
-                ).thento(done)
+                waitForUpdate()
+
+                expect(watcher.value, 3)
+                spy.toHaveBeenCalledWith(3, 2)
+                vm.b = {c = 4} -- swapping the object
+
+                expect(watcher.value, 4)
+                spy.toHaveBeenCalledWith(4, 3)
             end
         )
 
@@ -60,10 +56,10 @@ describe(
                 Vue.set(vm.b, "e", 123)
                 waitForUpdate(
                     function()
-                        expect(watcher1.value).toBe(123)
+                        expect(watcher1.value, 123)
                         expect(watcher2.value).toBeUndefined()
-                        expect(spy.calls.count()).toBe(1)
-                        expect(spy).toHaveBeenCalledWith(123, undefined)
+                        expect(spy.calls.count(), 1)
+                        spy.toHaveBeenCalledWith(123, undefined)
                     end
                 ).thento(done)
             end
@@ -73,12 +69,12 @@ describe(
             "delete",
             function(done)
                 local watcher = Watcher.new(vm, "b.c", spy)
-                expect(watcher.value).toBe(2)
+                expect(watcher.value, 2)
                 Vue.delete(vm.b, "c")
                 waitForUpdate(
                     function()
                         expect(watcher.value).toBeUndefined()
-                        expect(spy).toHaveBeenCalledWith(undefined, 2)
+                        spy.toHaveBeenCalledWith(undefined, 2)
                     end
                 ).thento(done)
             end
@@ -88,18 +84,18 @@ describe(
             "path containing $data",
             function(done)
                 local watcher = Watcher.new(vm, "$data.b.c", spy)
-                expect(watcher.value).toBe(2)
+                expect(watcher.value, 2)
                 vm.b = {c = 3}
                 waitForUpdate(
                     function()
-                        expect(watcher.value).toBe(3)
-                        expect(spy).toHaveBeenCalledWith(3, 2)
+                        expect(watcher.value, 3)
+                        spy.toHaveBeenCalledWith(3, 2)
                         vm._data.b.c = 4
                     end
                 ).thento(
                     function()
-                        expect(watcher.value).toBe(4)
-                        expect(spy).toHaveBeenCalledWith(4, 3)
+                        expect(watcher.value, 4)
+                        spy.toHaveBeenCalledWith(4, 3)
                     end
                 ).thento(done)
             end
@@ -107,9 +103,9 @@ describe(
 
         it(
             "deep watch",
-            function(done)
+            function()
                 local oldB
-                Watcher.new(
+                local watcher = Watcher.new(
                     vm,
                     "b",
                     spy,
@@ -118,24 +114,17 @@ describe(
                     }
                 )
                 vm.b.c = {d = 4}
-                waitForUpdate(
-                    function()
-                        expect(spy).toHaveBeenCalledWith(vm.b, vm.b)
-                        oldB = vm.b
-                        vm.b = {c = {{a = 1}}}
-                    end
-                ).thento(
-                    function()
-                        expect(spy).toHaveBeenCalledWith(vm.b, oldB)
-                        expect(spy.calls.count()).toBe(2)
-                        vm.b.c[0].a = 2
-                    end
-                ).thento(
-                    function()
-                        expect(spy).toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count()).toBe(3)
-                    end
-                ).thento(done)
+                waitForUpdate()
+                spy.toHaveBeenCalledWith(vm.b, vm.b)
+                oldB = vm.b
+                vm.b = {c = {{a = 1}}}
+
+                spy.toHaveBeenCalledWith(vm.b, oldB)
+                lu.assertEquals(#spy.calls, 2)
+                vm.b.c[1].a = 2
+
+                spy.toHaveBeenCalledWith(vm.b, vm.b)
+                lu.assertEquals(#spy.calls, 3)
             end
         )
 
@@ -153,7 +142,7 @@ describe(
                 vm.b.c = 3
                 waitForUpdate(
                     function()
-                        expect(spy).toHaveBeenCalledWith(vm._data, vm._data)
+                        spy.toHaveBeenCalledWith(vm._data, vm._data)
                     end
                 ).thento(done)
             end
@@ -173,14 +162,14 @@ describe(
                 Vue.set(vm.b, "_", vm.b)
                 waitForUpdate(
                     function()
-                        expect(spy).toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count()).toBe(1)
+                        spy.toHaveBeenCalledWith(vm.b, vm.b)
+                        expect(spy.calls.count(), 1)
                         vm.b._.c = 1
                     end
                 ).thento(
                     function()
-                        expect(spy).toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count()).toBe(2)
+                        spy.toHaveBeenCalledWith(vm.b, vm.b)
+                        expect(spy.calls.count(), 2)
                     end
                 ).thento(done)
             end
@@ -193,13 +182,13 @@ describe(
                 Vue.set(vm.b, "e", 123)
                 waitForUpdate(
                     function()
-                        expect(spy).toHaveBeenCalledWith(vm.b, vm.b)
-                        expect(spy.calls.count()).toBe(1)
+                        spy.toHaveBeenCalledWith(vm.b, vm.b)
+                        expect(spy.calls.count(), 1)
                         Vue.delete(vm.b, "e")
                     end
                 ).thento(
                     function()
-                        expect(spy.calls.count()).toBe(2)
+                        expect(spy.calls.count(), 2)
                     end
                 ).thento(done)
             end
@@ -216,16 +205,16 @@ describe(
                     end,
                     spy
                 )
-                expect(watcher.value).toBe(5)
+                expect(watcher.value, 5)
                 vm.a = 2
                 waitForUpdate(
                     function()
-                        expect(spy).toHaveBeenCalledWith(6, 5)
+                        spy.toHaveBeenCalledWith(6, 5)
                         vm.b = {d = 2}
                     end
                 ).thento(
                     function()
-                        expect(spy).toHaveBeenCalledWith(4, 6)
+                        spy.toHaveBeenCalledWith(4, 6)
                     end
                 ).thento(done)
             end
@@ -243,20 +232,20 @@ describe(
                     null,
                     {lazy = true}
                 )
-                expect(watcher.lazy).toBe(true)
+                expect(watcher.lazy, true)
                 expect(watcher.value).toBeUndefined()
-                expect(watcher.dirty).toBe(true)
+                expect(watcher.dirty, true)
                 watcher.evaluate()
-                expect(watcher.value).toBe(5)
-                expect(watcher.dirty).toBe(false)
+                expect(watcher.value, 5)
+                expect(watcher.dirty, false)
                 vm.a = 2
                 waitForUpdate(
                     function()
-                        expect(watcher.value).toBe(5)
-                        expect(watcher.dirty).toBe(true)
+                        expect(watcher.value, 5)
+                        expect(watcher.dirty, true)
                         watcher.evaluate()
-                        expect(watcher.value).toBe(6)
-                        expect(watcher.dirty).toBe(false)
+                        expect(watcher.value, 6)
+                        expect(watcher.dirty, false)
                     end
                 ).thento(done)
             end
@@ -270,8 +259,8 @@ describe(
                 vm.b.c = 3
                 waitForUpdate(
                     function()
-                        expect(watcher.active).toBe(false)
-                        expect(spy).toHaventBeenCalled()
+                        expect(watcher.active, false)
+                        spy.toHaventBeenCalled()
                     end
                 ).thento(done)
             end

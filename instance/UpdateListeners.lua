@@ -1,39 +1,35 @@
-local config = require('config')
-local Util = require('util.Util')
-local Error = require('util.Error')
+local config = require("config")
+local Util = require("util.Util")
+local Error = require("util.Error")
 local warn = Util.warn
 local invokeWithErrorHandling = Error.invokeWithErrorHandling
-local
-  cached,
-  isUndef,
-  isTrue,
-  isPlainObject,
-  isArray,
-  slice
-=
-Util.cached,
-Util.isUndef,
-Util.isTrue,
-Util.isPlainObject,
-Util.isArray,
-Util.slice
+local cached, isUndef, isTrue, isPlainObject, isArray, slice =
+    Util.cached,
+    Util.isUndef,
+    Util.isTrue,
+    Util.isPlainObject,
+    Util.isArray,
+    Util.slice
 
-local normalizeEvent = cached(function (name)
-    local passive = name.charAt(0) == '&'
-    name = passive and name.slice(1) or name
-    local once = name.charAt(0) == '~' -- Prefixed last, checked first
-    name = once and name.slice(1) or name
-    local capture = name.charAt(0) == '!'
-    name = capture and name.slice(1) or name
-    return {
-        name = name,
-        once = once,
-        capture = capture,
-        passive = passive
-    }
-end)
+local normalizeEvent =
+    cached(
+    function(name)
+        local passive = name.charAt(0) == "&"
+        name = passive and name.slice(1) or name
+        local once = name.charAt(0) == "~" -- Prefixed last, checked first
+        name = once and name.slice(1) or name
+        local capture = name.charAt(0) == "!"
+        name = capture and name.slice(1) or name
+        return {
+            name = name,
+            once = once,
+            capture = capture,
+            passive = passive
+        }
+    end
+)
 
-local function createFnInvoker (fns, vm)
+local function createFnInvoker(fns, vm)
     local fn
     local invoker = {}
     fn = function(...)
@@ -41,11 +37,11 @@ local function createFnInvoker (fns, vm)
         if (isArray(fns)) then
             local cloned = slice(fns)
             for i = 1, #cloned do
-                invokeWithErrorHandling(cloned[i], vm, 'v-on handler', ...)
+                invokeWithErrorHandling(cloned[i], vm, "v-on handler", ...)
             end
-        else 
+        else
             -- return handler return value for single handlers
-            return invokeWithErrorHandling(fns, vm, 'v-on handler', ...)
+            return invokeWithErrorHandling(fns, vm, "v-on handler", ...)
         end
     end
 
@@ -55,14 +51,7 @@ local function createFnInvoker (fns, vm)
     return invoker
 end
 
-local function updateListeners (
-    on,
-    oldOn,
-    add,
-    remove,
-    createOnceHandler,
-    vm
-) 
+local function updateListeners(on, oldOn, add, remove, createOnceHandler, vm)
     local def, old, event
     for name, cur in pairs(on) do
         def = cur
@@ -74,19 +63,16 @@ local function updateListeners (
             event.params = def.params
         end
         if (isUndef(cur)) then
-            if config.env ~= 'production' then
-                    warn(
-                    'Invalid handler for event "${event.name}": got ' .. tostring(cur),
-                    vm
-                    )
+            if config.env ~= "production" then
+                warn('Invalid handler for event "${event.name}": got ' .. tostring(cur), vm)
             end
         elseif (isUndef(old)) then
             if (isUndef(cur.fns)) then
                 cur = createFnInvoker(cur, vm)
                 on[name] = cur
             end
-            if (isTrue(event.once))then
-                cur =  createOnceHandler(event.name, cur, event.capture)
+            if (isTrue(event.once)) then
+                cur = createOnceHandler(event.name, cur, event.capture)
                 on[name] = cur
             end
             add(event.name, cur, event.capture, event.passive, event.params)

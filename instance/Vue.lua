@@ -18,43 +18,41 @@ Vue.prototype = {options = {}}
 --- 创建Vue实例
 ---@return Component
 Vue.new = function(options)
-  local properties = {}
-  local instance = {__properties = properties}
-  
-  for i,v in pairs(Vue.prototype) do
-    instance[i] = v
-  end
-  
-  ---@param self Component
-  instance.__index = function(self, key)
-    local property = properties[key]
-    if property then
-        return property[1](self)
+    local properties = {}
+    local instance = {__properties = properties}
+
+    for i, v in pairs(Vue.prototype) do
+        instance[i] = v
     end
-  end
 
-  ---@param self Component
-  instance.__newindex = function(self, key, value)
-      local property = properties[key]
-      if property then
-          property[2](self, value)
-      else
-          rawset(self, key, value)
-      end
-  end
+    ---@param self Component
+    instance.__index = function(self, key)
+        local property = properties[key]
+        if property then
+            return property[1](self)
+        end
+    end
 
-  setmetatable(instance, instance)
+    ---@param self Component
+    instance.__newindex = function(self, key, value)
+        local property = properties[key]
+        if property then
+            property[2](self, value)
+        else
+            rawset(self, key, value)
+        end
+    end
 
-  instance:_init(options)
-  return instance
+    setmetatable(instance, instance)
+
+    instance:_init(options)
+    return instance
 end
-
 
 Init.initMixin(Vue)
 State.stateMixin(Vue)
 Events.eventsMixin(Vue)
 Lifecycle.lifecycleMixin(Vue)
 -- Render.renderMixin(Vue)
-
 
 return Vue

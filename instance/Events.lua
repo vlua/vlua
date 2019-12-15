@@ -1,25 +1,19 @@
 local tinsert, tremove = table.insert, table.remove
 local type = type
-local Util = require('util.Util')
-local Error = require('util.Error')
-local Dep = require('observer.Dep')
+local Util = require("util.Util")
+local Error = require("util.Error")
+local Dep = require("observer.Dep")
 local config = require("config")
 local setmetatable = setmetatable
 local invokeWithErrorHandling = Error.invokeWithErrorHandling
 local pushTarget, popTarget = Dep.pushTarget, Dep.popTarget
-local
-  tip,
-  toArray,
-  hyphenate,
-  formatComponentName,
-  createObject
-=
-Util.tip,
-Util.toArray,
-Util.hyphenate,
-Util.formatComponentName,
-Util.createObject
-local updateListeners = require('instance.UpdateListeners').updateListeners
+local tip, toArray, hyphenate, formatComponentName, createObject =
+    Util.tip,
+    Util.toArray,
+    Util.hyphenate,
+    Util.formatComponentName,
+    Util.createObject
+local updateListeners = require("instance.UpdateListeners").updateListeners
 
 local updateComponentListeners
 
@@ -27,20 +21,20 @@ local function callHook(vm, hook)
     -- #7573 disable dep collection when invoking lifecycle hooks
     pushTarget()
     local handlers = vm._options[hook]
-    local info = hook .. ' hook'
+    local info = hook .. " hook"
     if (handlers) then
-      local j = #handlers
-      for i = 1, j do
-        invokeWithErrorHandling(handlers[i], vm, info, vm)
-      end
+        local j = #handlers
+        for i = 1, j do
+            invokeWithErrorHandling(handlers[i], vm, info, vm)
+        end
     end
     if (vm._hasHookEvent) then
-      vm:_emit('hook:' .. hook)
+        vm:_emit("hook:" .. hook)
     end
     popTarget()
-  end
+end
 ---@param vm Component
-local function initEvents (vm)
+local function initEvents(vm)
     vm._events = {}
     vm._hasHookEvent = false
     -- init parent attached events
@@ -54,11 +48,11 @@ end
 local target
 
 local function add(event, fn)
-  target._on(event, fn)
+    target._on(event, fn)
 end
 
 local function remove(event, fn)
-  target._off(event, fn)
+    target._off(event, fn)
 end
 
 local function createOnceHandler(event, fn)
@@ -76,19 +70,15 @@ end
 ---@param vm Component
 ---@param listeners Object
 ---@param oldListeners Object
-updateComponentListeners = function(
-  vm,
-  listeners,
-  oldListeners
-)
+updateComponentListeners = function(vm, listeners, oldListeners)
     target = vm
     updateListeners(listeners, oldListeners or {}, add, remove, createOnceHandler, vm)
     target = nil
 end
 
 ---@param Vue Vue
-local function eventsMixin (Vue)
-    local hookRE = '^hook:'
+local function eventsMixin(Vue)
+    local hookRE = "^hook:"
     ---@param event string | string[]
     ---@param fn Function
     ---@return Component
@@ -105,7 +95,7 @@ local function eventsMixin (Vue)
                 events = {}
                 vm._events[event] = events
             end
-            tinsert(events , fn)
+            tinsert(events, fn)
             -- optimize hook:event cost by using a boolean flag marked at registration
             -- instead of a hash lookup
             if (string.match(event, hookRE)) then
@@ -122,11 +112,11 @@ local function eventsMixin (Vue)
         ---@type Component
         local vm = self
         local callable
-        local function on (...)
+        local function on(...)
             vm:_off(event, callable)
             fn(vm, ...)
         end
-        callable = {fn = fn , __call = on}
+        callable = {fn = fn, __call = on}
         setmetatable(callable, callable)
         vm:_on(event, callable)
         return vm
@@ -176,15 +166,15 @@ local function eventsMixin (Vue)
     function Vue.prototype:_emit(event, ...)
         ---@type Component
         local vm = self
-        if (config.env ~= 'production') then
+        if (config.env ~= "production") then
             local lowerCaseEvent = string.lower(event)
             if (lowerCaseEvent ~= event and vm._events[lowerCaseEvent]) then
                 tip(
                     'Event "${lowerCaseEvent}" is emitted in component ' ..
-                    '${formatComponentName(vm)} but the handler is registered for "${event}". ' ..
-                    'Note that HTML attributes are case-insensitive and you cannot use ' ..
-                    'v-on to listen to camelCase events when using in-DOM templates. ' ..
-                    'You should probably use "${hyphenate(event)}" instead of "${event}".'
+                        '${formatComponentName(vm)} but the handler is registered for "${event}". ' ..
+                            "Note that HTML attributes are case-insensitive and you cannot use " ..
+                                "v-on to listen to camelCase events when using in-DOM templates. " ..
+                                    'You should probably use "${hyphenate(event)}" instead of "${event}".'
                 )
             end
         end

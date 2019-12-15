@@ -20,7 +20,6 @@ local function defineProperty(target, key, getter, setter)
     properties[key] = {getter, setter}
 end
 
-
 -- These helpers produce better VM code in JS engines due to their
 -- explicitness and function inlining.
 local function isUndef(v)
@@ -102,17 +101,17 @@ local function split(szFullString, szSeparator)
     local nSplitIndex = 1
     local nSplitArray = {}
     while true do
-      local nFindLastIndex = string.find(szFullString, szSeparator, nFindStartIndex)
-      if not nFindLastIndex then
-        nSplitArray[nSplitIndex] = string.sub(szFullString, nFindStartIndex, string.len(szFullString))
-        break
-      end
-      nSplitArray[nSplitIndex] = string.sub(szFullString, nFindStartIndex, nFindLastIndex - 1)
-      nFindStartIndex = nFindLastIndex + string.len(szSeparator)
-      nSplitIndex = nSplitIndex + 1
+        local nFindLastIndex = string.find(szFullString, szSeparator, nFindStartIndex)
+        if not nFindLastIndex then
+            nSplitArray[nSplitIndex] = string.sub(szFullString, nFindStartIndex, string.len(szFullString))
+            break
+        end
+        nSplitArray[nSplitIndex] = string.sub(szFullString, nFindStartIndex, nFindLastIndex - 1)
+        nFindStartIndex = nFindLastIndex + string.len(szSeparator)
+        nSplitIndex = nSplitIndex + 1
     end
     return nSplitArray
-  end
+end
 
 --[[*
  * Make a map and return a function for checking if a key
@@ -182,7 +181,8 @@ local camelizeRE = "-(\\w)"
 local camelize =
     cached(
     function(str)
-        return string.gsub(str,
+        return string.gsub(
+            str,
             camelizeRE,
             function(_, c)
                 return c and string.upper(c) or ""
@@ -196,7 +196,7 @@ local camelize =
  ]]
 local capitalize =
     cached(
-        ---@param str string
+    ---@param str string
     function(str)
         return string.upper(str[1]) .. string.sub(str, 2)
     end
@@ -327,7 +327,6 @@ local hasSymbol = false
 local function isServerRendering()
     return false
 end
-
 
 return {
     emptyObject = emptyObject,

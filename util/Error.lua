@@ -1,5 +1,4 @@
-
--- local function handleError (err: Error, vm: any, info: string) 
+-- local function handleError (err: Error, vm: any, info: string)
 --   -- Deactivate deps tracking while processing error handler to avoid possible infinite rendering.
 --   -- See: https:--github.com/vuejs/vuex/issues/1505
 --   pushTarget()
@@ -30,14 +29,9 @@
 ---@param args null | any[]
 ---@param vm any
 ---@param info string
-local function invokeWithErrorHandling (
-  handler,
-  vm,
-  info,
-  ...
-)
-  local res
---   try {
+local function invokeWithErrorHandling(handler, vm, info, ...)
+    local res
+    --   try {
     res = handler(...)
     -- if (res && !res._isVue && isPromise(res) && !res._handled) {
     --   res.catch(e => handleError(e, vm, info + ` (Promise/async)`))
@@ -45,10 +39,10 @@ local function invokeWithErrorHandling (
     --   -- avoid catch triggering multiple times when nested calls
     --   res._handled = true
     -- }
---   } catch (e) {
---     handleError(e, vm, info)
---   }
-  return res
+    --   } catch (e) {
+    --     handleError(e, vm, info)
+    --   }
+    return res
 end
 
 -- function globalHandleError (err, vm, info) {

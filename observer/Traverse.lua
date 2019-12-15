@@ -1,8 +1,6 @@
-
 local seenObjects = {}
 
-
-local function _traverse (val, seen)
+local function _traverse(val, seen)
     if type(val) ~= "table" then
         return
     end
@@ -15,7 +13,7 @@ local function _traverse (val, seen)
         end
         seen[depId] = val
     end
-    for i,v in pairs(val) do
+    for i, v in pairs(val) do
         _traverse(i, seen)
         _traverse(v, seen)
     end

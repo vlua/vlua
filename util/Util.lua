@@ -16,21 +16,28 @@ local function createObject(prototype)
     end
 end
 
-local function createDeinfePropertyObject()
-    local properties = {}
-    local instance = {__properties = properties}
+local PlainObject = {}
+local V_GETTER = 1
+local V_SETTER = 2
 
-    instance.__index = function(self, key)
+--- 创建平摊的带属性的对象
+local function createPlainObjectMetatable()
+    local properties = {}
+
+    ---@class ReactiveMetatable
+    local mt = {}
+    mt.__properties = properties
+    mt.__index = function(self, key)
         local property = properties[key]
         if property then
-            return property[1](self)
+            return property[V_GETTER]()
         end
     end
 
-    instance.__newindex = function(self, key, value)
+    mt.__newindex = function(self, key, value)
         local property = properties[key]
         if property then
-            property[2](self, value)
+            property[V_SETTER](value)
         else
             properties[key] = {
                 function()
@@ -43,29 +50,43 @@ local function createDeinfePropertyObject()
         end
     end
 
-    instance.__pairs = function()
+    mt.__pairs = function()
         local key, valueStore
         return function()
             key, valueStore = next(properties, key)
-            return key, valueStore and valueStore[1](valueStore)
+            return key, valueStore and valueStore[V_GETTER]()
         end
     end
-    
-    instance.__ipairs = function()
+
+    mt.__ipairs = function()
         local i = 1
         local valueStore
         return function()
             valueStore = properties[i]
             i = i + 1
-            return i, valueStore and valueStore[1](valueStore)
+            return i, valueStore and valueStore[V_GETTER]()
         end
     end
 
-    instance.__len = function()
+    mt.__len = function()
         return #properties
     end
-    setmetatable(instance, instance)
+
+    setmetatable(mt, PlainObject)
+    return mt
+end
+
+--- 创建平摊的带属性的对象
+local function createPlainObject()
+    local instance = {}
+    local mt = createPlainObjectMetatable()
+    setmetatable(instance, mt)
     return instance
+end
+
+
+local function isPlainObject(obj)
+    return type(obj) == "table" and getmetatable(obj) == nil
 end
 
 --[[ eslint-disable no-unused-vars ]]
@@ -74,13 +95,18 @@ end
  * Stubbing args to make Flow happy without leaving useless transpiled code
  * with ...rest (https:--flow.org/blog/2017/05/07/Strict-Function-Call-Arity/).
  ]]
- local function noop(a, b, c)
+ local function noop()
  end
+
+
 
 --- 创建一个属性
 local function defineProperty(target, key, getter, setter)
-    local properties = target.__properties
-    properties[key] = {getter or noop, setter or noop}
+    local mt = getmetatable(target)
+    assert(mt, "not plain object or reactive object")
+    local properties = mt.__properties
+    assert(mt, "not plain object or reactive object")
+    properties[key] = {getter or noop, setter or function()error('no setter for key : '.. key)end}
 end
 
 -- These helpers produce better VM code in JS engines due to their
@@ -422,5 +448,7 @@ return {
     concat = concat,
     isReserved = Lang.isReserved,
     isServerRendering = isServerRendering,
-    createDeinfePropertyObject = createDeinfePropertyObject
+    createPlainObject = createPlainObject,
+    createPlainObjectMetatable = createPlainObjectMetatable,
+    PlainObject = PlainObject
 }

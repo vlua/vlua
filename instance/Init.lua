@@ -56,7 +56,7 @@ initMixin = function(Vue)
             -- internal component options needs special treatment.
             initInternalComponent(vm, options)
         else
-            vm._options = mergeOptions(resolveConstructorOptions(getmetatable(vm)), options or {}, vm)
+            vm._options = mergeOptions(resolveConstructorOptions(vm.__proto), options or {}, vm)
         end
         --[[ istanbul ignore else ]]
         if (config.env ~= "production") then
@@ -91,7 +91,7 @@ end
 ---@param vm Component
 ---@param options InternalComponentOptions
 initInternalComponent = function(vm, options)
-    local opts = createObject(getmetatable(vm).options)
+    local opts = createObject(vm.__proto.options)
     vm._options = opts
     -- doing self because it's faster than dynamic enumeration.
     local parentVnode = options._parentVnode

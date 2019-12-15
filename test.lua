@@ -10,7 +10,7 @@ local exit = false
 
 function TestDescribe.testRun()
     local run = function()
-        for i, v in pairs(TestDescribe.children) do
+        for i, v in ipairs(TestDescribe.children) do
             v.run()
         end
         exit = true
@@ -40,29 +40,19 @@ function describe(name, fn)
 
     testunit.run = function()
         testunit.beforeAll()
-        for i, v in sortedPairs(testunit.its) do
-            print(string.rep("    ", indent) .. "begin it ", i)
-            indent = indent + 1
-            testunit.beforeEach()
-            v()
-            testunit.afterEach()
-            indent = indent - 1
-            print(string.rep("    ", indent) .. "end it ", i)
-        end
-
-        for i, v in sortedPairs(testunit.children) do
-            print(string.rep("    ", indent) .. "begin describe ", i)
+        for i, v in ipairs(testunit.children) do
+            print(string.rep("    ", indent) .. "begin describe ", i , v.name)
             indent = indent + 1
             testunit.beforeEach()
             v.run()
             testunit.afterEach()
             indent = indent - 1
-            print(string.rep("    ", indent) .. "end describe ", i)
+            print(string.rep("    ", indent) .. "end describe ", i , v.name)
         end
         testunit.afterAll()
     end
     local parent = stacks[#stacks]
-    parent.children[name] = testunit
+    table.insert(parent.children, {name = name, run = testunit.run})
     table.insert(stacks, testunit)
     fn()
     table.remove(stacks)
@@ -90,7 +80,7 @@ end
 
 function it(name, fn)
     local parent = stacks[#stacks]
-    parent.its[name] = fn
+    table.insert(parent.children, {name = name, run = fn})
 end
 
 local updaters = {}

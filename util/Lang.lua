@@ -150,7 +150,14 @@ local function splice(t, index, howMany, ...)
 end
 
 local function instanceof(obj, cls)
-    return getmetatable(obj) == cls
+    local mt = obj
+    while(mt) do
+        if mt == cls then
+            return true
+        end
+        mt = getmetatable(mt)
+    end
+    return false
 end
 
 return {

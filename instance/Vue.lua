@@ -10,7 +10,7 @@ local Observer = require("observer.Observer")
 local NextTick = require("util.NextTick")
 -- local Render = require("instance.Render")
 local Util = require("util.Util")
-local createDeinfePropertyObject = Util.createDeinfePropertyObject
+local createPlainObject = Util.createPlainObject
 ---@class Vue
 local Vue = {}
 
@@ -21,32 +21,13 @@ Vue.prototype = {options = {}}
 --- 创建Vue实例
 ---@return Component
 Vue.new = function(options)
-    local properties = {}
-    local instance = {__properties = properties}
+    local instance = createPlainObject()
 
     for i, v in pairs(Vue.prototype) do
         instance[i] = v
     end
 
-    ---@param self Component
-    instance.__index = function(self, key)
-        local property = properties[key]
-        if property then
-            return property[1](self)
-        end
-    end
-
-    ---@param self Component
-    instance.__newindex = function(self, key, value)
-        local property = properties[key]
-        if property then
-            property[2](self, value)
-        else
-            rawset(self, key, value)
-        end
-    end
-
-    setmetatable(instance, instance)
+    instance.__proto = Vue.prototype
 
     instance:_init(options)
     return instance

@@ -107,11 +107,15 @@ local function mainLoop()
 end
 
 function lu.createSpy(name)
+    ---@class Spy
     local spy = {}
     spy.__name = name
     spy.calls = {}
-    spy.__call = function(_, ...)
+    spy.call = function(...)
         table.insert(spy.calls, {...})
+    end
+    spy.__call = function(_, ...)
+        spy.call(...)
     end
 
     function spy.toHaveBeenCalledWith(...)
@@ -142,16 +146,21 @@ end
 function lu.spyOn(target, name)
     local spy = lu.createSpy(name)
     local call = target[name]
-    local spycall = spy.__call
+    local spycall = spy.call
 
-    spy.__call = function(_,...)
+    spy.call = function(...)
         spycall(...)
         return call(...)
     end
-    target[name] = spy
+    spy.__call = function(_,...)
+        spy.call(...)
+    end
+    target[name] = spy.call
+    return spy
 end
 
 function lu.createSpyObj(name, fields)
+    ---@class SpyObj
     local spy = {}
     spy.__calls = {}
 
@@ -196,6 +205,9 @@ end
 require("test.unit.modules.observer.TestDep")
 require("test.unit.modules.observer.TestWatcher")
 require("test.unit.modules.observer.TestObserver")
+
+require("test.unit.features.instance.TestInit")
+require("test.unit.features.instance.methods-data")
 
 local runner = lu.LuaUnit.new()
 runner:setOutputType("tap")

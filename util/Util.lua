@@ -161,6 +161,11 @@ local function isPlainObject(obj)
     return typeof(obj) == "table" and getmetatable(obj) == nil
 end
 
+local function isCallable(fn)
+    local t = type(fn)
+    return t == "function" or (getmetatable(fn) and type(getmetatable(fn).__call) == "function")
+end
+
 local function isPromise(val)
     return false
 end
@@ -419,6 +424,7 @@ return {
     isObject = isObject,
     toRawType = toRawType,
     isPlainObject = isPlainObject,
+    isCallable = isCallable,
     isPromise = isPromise,
     toString = toString,
     toNumber = toNumber,

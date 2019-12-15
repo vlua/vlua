@@ -299,17 +299,17 @@ initMethods = function(vm, methods)
         if (config.env ~= "production") then
             if (type(method) ~= "function") then
                 warn(
-                    'Method "_{key}" has type "_{typeof methods[key]}" in the component definition. ' +
+                    'Method "_{' .. key .. '}" has type "_{' .. type(method) .. '}" in the component definition. ' ..
                         "Did you reference the function correctly?",
                     vm
                 )
             end
             if (props and hasOwn(props, key)) then
-                warn('Method "_{key}" has already been defined as a prop.', vm)
+                warn('Method "_{' .. key .. '}" has already been defined as a prop.', vm)
             end
             if (vm[key] ~= nil and isReserved(key)) then
                 warn(
-                    'Method "_{key}" conflicts with an existing Vue instance method. ' +
+                    'Method "_{' .. key .. '}" conflicts with an existing Vue instance method. ' ..
                         "Avoid defining component methods that start with _ or _."
                 )
             end

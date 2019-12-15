@@ -300,25 +300,25 @@ describe(
                 local obj1 = {a = 1}
                 local ob1 = observe(obj1)
                 local dep1 = ob1.dep
-                lu.spyOn(dep1, "notify")
+                local dep1notify = lu.spyOn(dep1, "notify")
                 setProp(obj1, "b", 2)
                 lu.assertEquals(obj1.b, 2)
-                lu.assertEquals(#dep1.notify.calls, 1)
+                lu.assertEquals(#dep1notify.calls, 1)
                 delProp(obj1, "a")
                 lu.assertEquals(hasOwn(obj1, "a"), false)
-                lu.assertEquals(#dep1.notify.calls, 2)
+                lu.assertEquals(#dep1notify.calls, 2)
                 -- set existing key, should be a plain set and not
                 -- trigger own ob's notify
                 setProp(obj1, "b", 3)
                 lu.assertEquals(obj1.b, 3)
-                lu.assertEquals(#dep1.notify.calls, 2)
+                lu.assertEquals(#dep1notify.calls, 2)
                 -- set non-existing key
                 setProp(obj1, "c", 1)
                 lu.assertEquals(obj1.c, 1)
-                lu.assertEquals(#dep1.notify.calls, 3)
+                lu.assertEquals(#dep1notify.calls, 3)
                 -- should ignore deleting non-existing key
                 delProp(obj1, "a")
-                lu.assertEquals(#dep1.notify.calls, 3)
+                lu.assertEquals(#dep1notify.calls, 3)
                 -- should work on non-observed objects
                 local obj2 = {a = 1}
                 delProp(obj2, "a")
@@ -328,24 +328,24 @@ describe(
                 obj3.a = 1
                 local ob3 = observe(obj3)
                 local dep3 = ob3.dep
-                lu.spyOn(dep3, "notify")
+                local dep3notify = lu.spyOn(dep3, "notify")
                 setProp(obj3, "b", 2)
                 lu.assertEquals(obj3.b, 2)
-                lu.assertEquals(#dep3.notify.calls, 1)
+                lu.assertEquals(#dep3notify.calls, 1)
                 delProp(obj3, "a")
                 lu.assertEquals(hasOwn(obj3, "a"), false)
-                lu.assertEquals(#dep3.notify.calls, 2)
+                lu.assertEquals(#dep3notify.calls, 2)
                 -- set and delete non-numeric key on array
                 local arr2 = {"a"}
                 local ob2 = observe(arr2)
                 local dep2 = ob2.dep
-                lu.spyOn(dep2, "notify")
+                local dep2notify = lu.spyOn(dep2, "notify")
                 setProp(arr2, "b", 2)
                 lu.assertEquals(arr2.b, 2)
-                lu.assertEquals(#dep2.notify.calls, 1)
+                lu.assertEquals(#dep2notify.calls, 1)
                 delProp(arr2, "b")
                 lu.assertEquals(hasOwn(arr2, "b"), false)
-                lu.assertEquals(#dep2.notify.calls, 2)
+                lu.assertEquals(#dep2notify.calls, 2)
             end
         )
 
@@ -415,7 +415,7 @@ describe(
                 local arr = {{}}
                 local ob = observe(arr)
                 local dep = ob.dep
-                lu.spyOn(dep, "notify")
+                local depnotify = lu.spyOn(dep, "notify")
                 local objs = {{}, {}, {}}
 
                 local vm = {_watchers = {}}
@@ -428,7 +428,7 @@ describe(
                 table.insert(arr, 2, objs[2])
                 table.insert(arr, 1, objs[3])
                 table.insert(arr, 1, objs[3])
-                lu.assertEquals(#dep.notify.calls, 4)
+                lu.assertEquals(#depnotify.calls, 4)
                 -- inserted elements should be observed
                 for _, obj in pairs(objs) do
                     lu.assertEquals(instanceof(getmetatable(obj).__ob__, Observer), true)

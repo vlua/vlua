@@ -210,7 +210,6 @@ local function set(target, key, val)
     local mt = getmetatable(target)
     if config.env ~= "production" and (not mt or not mt.__ob__) then
         warn("Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}")
-        return
     end
 
     -- 如果已经有这个值
@@ -222,7 +221,7 @@ local function set(target, key, val)
     if (target._isVue or (ob and ob.vmCount ~= 0)) then
         if config.env ~= "production" then
             warn(
-                "Avoid adding reactive properties to a Vue instance or its root $data " +
+                "Avoid adding reactive properties to a Vue instance or its root $data " ..
                     "at runtime - declare it upfront in the data option."
             )
             return val
@@ -253,7 +252,7 @@ local function del(target, key)
 
     if (target._isVue or (ob and ob.vmCount ~= 0)) then
         if config.env ~= "production" then
-            warn("Avoid deleting properties on a Vue instance or its root $data " + "- just set it to null.")
+            warn("Avoid deleting properties on a Vue instance or its root $data " .. "- just set it to null.")
             return
         end
     end

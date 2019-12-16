@@ -349,65 +349,52 @@ describe(
             end
         )
 
-        --[[
         it(
             "warning set/delete on a Vue instance",
-            function(done)
+            function()
                 local vm =
                     Vue.new(
                     {
-                        template = "<div>{{aendend</div>",
                         data = {a = 1}
                     }
-                )._mount()
-                lu.assertEquals(vm._el.outerHTML, "<div>1</div>")
+                )
+                lu.assertEquals(vm.a, 1)
                 Vue.set(vm, "a", 2)
-                waitForUpdate(
-                    function()
-                        lu.assertEquals(vm._el.outerHTML, "<div>2</div>")
-                        lu.assertEquals("Avoid adding reactive properties to a Vue instance").isnot.toHaveBeenWarned()
-                        Vue.delete(vm, "a")
-                    end
-                ).thento(
-                    function()
-                        lu.assertEquals("Avoid deleting properties on a Vue instance").toHaveBeenWarned()
-                        lu.assertEquals(vm._el.outerHTML, "<div>2</div>")
-                        Vue.set(vm, "b", 123)
-                        lu.assertEquals("Avoid adding reactive properties to a Vue instance").toHaveBeenWarned()
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(vm.a, 2)
+                --lu.assertEquals("Avoid adding reactive properties to a Vue instance").isnot.toHaveBeenWarned()
+                Vue.delete(vm, "a")
+                waitForUpdate()
+                --lu.assertEquals("Avoid deleting properties on a Vue instance").toHaveBeenWarned()
+                lu.assertEquals(vm.a, 2)
+                Vue.set(vm, "b", 123)
+                --lu.assertEquals("Avoid adding reactive properties to a Vue instance").toHaveBeenWarned()
             end
         )
 
         it(
             "warning set/delete on Vue instance root $data",
-            function(done)
+            function()
                 local data = {a = 1}
                 local vm =
                     Vue.new(
                     {
-                        template = "<div>{{aendend</div>",
                         data = data
                     }
-                )._mount()
-                lu.assertEquals(vm._el.outerHTML, "<div>1</div>")
+                )
+                lu.assertEquals(vm.a, 1)
                 lu.assertEquals(Vue.set(data, "a", 2), 2)
-                waitForUpdate(
-                    function()
-                        lu.assertEquals(vm._el.outerHTML, "<div>2</div>")
-                        lu.assertEquals("Avoid adding reactive properties to a Vue instance").isnot.toHaveBeenWarned()
-                        Vue.delete(data, "a")
-                    end
-                ).thento(
-                    function()
-                        lu.assertEquals("Avoid deleting properties on a Vue instance").toHaveBeenWarned()
-                        lu.assertEquals(vm._el.outerHTML, "<div>2</div>")
-                        lu.assertEquals(Vue.set(data, "b", 123), 123)
-                        lu.assertEquals("Avoid adding reactive properties to a Vue instance").toHaveBeenWarned()
-                    end
-                ).thento(done)
+                waitForUpdate()
+                lu.assertEquals(vm.a, 2)
+                -- lu.assertEquals("Avoid adding reactive properties to a Vue instance").isnot.toHaveBeenWarned()
+                Vue.delete(data, "a")
+                waitForUpdate()
+                -- lu.assertEquals("Avoid deleting properties on a Vue instance").toHaveBeenWarned()
+                lu.assertEquals(vm.a, 2)
+                lu.assertEquals(Vue.set(data, "b", 123), 123)
+                -- lu.assertEquals("Avoid adding reactive properties to a Vue instance").toHaveBeenWarned()
             end
-        )]]
+        )
 
         it(
             "observing array mutation",
@@ -419,9 +406,53 @@ describe(
                 local objs = {{}, {}, {}}
 
                 local vm = {_watchers = {}}
-                local watch = Watcher.new(vm, function()return arr[1] end, function(vm, value, old)
-                    print("changed:" , vm , value, old)
-                end)
+                local watch =
+                    Watcher.new(
+                    vm,
+                    function()
+                        return arr[1]
+                    end,
+                    function(vm, value, old)
+                        print("changed:", vm, value, old)
+                    end
+                )
+
+                table.insert(arr, objs[1])
+                table.remove(arr)
+                table.insert(arr, 2, objs[2])
+                table.insert(arr, 1, objs[3])
+                table.insert(arr, 1, objs[3])
+                lu.assertEquals(#depnotify.calls, 4)
+                -- inserted elements should be observed
+                for _, obj in pairs(objs) do
+                    lu.assertEquals(instanceof(getmetatable(obj).__ob__, Observer), true)
+                end
+            end
+        )
+
+        it(
+            "observing array mutation",
+            function()
+                local arr = {{}}
+                local ob = observe(arr)
+                local dep = ob.dep
+                local depnotify = lu.spyOn(dep, "notify")
+                local objs = {{}, {}, {}}
+
+                local vm = {_watchers = {}}
+                local watch =
+                    Watcher.new(
+                    vm,
+                    function()
+                        return arr
+                    end,
+                    function(vm, value, old)
+                        print("changed:", vm, value, old)
+                    end,
+                    {
+                        deep = true
+                    }
+                )
 
                 table.insert(arr, objs[1])
                 table.remove(arr)

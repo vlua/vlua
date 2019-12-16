@@ -62,7 +62,7 @@ local function patchVnode(oldVnode, vnode, insertedVnodeQueue, ownerArray, index
     if (oldVnode == vnode) then
         return
     end
-    print("patchVnode" , oldVnode.elm, vnode.elm)
+    print("patchVnode" , oldVnode.elm, vnode.elm, index)
 end
 local function insertBefore(parent, node, before)
     print("insertBefore" , node, before)
@@ -73,7 +73,7 @@ local function nextSibling(node)
 end
 local function createElm(vnode, insertedVnodeQueue, parentElm, refElm, nested, ownerArray, index)
 
-    print("createElm" , vnode.elm)
+    print("createElm" , vnode.elm , index)
 end
 
 local function removeElm(elm)
@@ -138,7 +138,7 @@ local function updateChildren(parentElm, oldCh, newCh, insertedVnodeQueue, remov
         elseif (sameNode(oldStartVnode, newEndVnode)) then -- Vnode moved right
             patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx)
             if canMove then
-                insertBefore(parentElm, oldStartVnode.elm, nextSibling(oldEndVnode.elm))
+                insertBefore(parentElm, oldStartVnode.elm, oldEndVnode.elm)
             end
             oldStartIdx = oldStartIdx + 1
             oldStartVnode = oldCh[oldStartIdx]
@@ -214,14 +214,29 @@ describe(
                 local oldElements = {
                     elements[1],
                     elements[2],
-                    elements[3],
                     elements[4],
-                    elements[5]
+                    elements[5],
+                    elements[4],
+                    elements[5],
+                    elements[4],
+                    elements[5],
+                    elements[4],
+                    elements[5],
+                    elements[3],
                 }
                 local newElements = {
                     elements[1],
                     elements[3],
-                    elements[2]
+                    elements[3],
+                    elements[2],
+                    elements[3],
+                    elements[2],
+                    elements[3],
+                    elements[2],
+                    elements[3],
+                    elements[2],
+                    elements[3],
+                    elements[2],
                 }
 
                 updateChildren(nil, oldElements, newElements)

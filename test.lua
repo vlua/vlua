@@ -135,8 +135,8 @@ function lu.createSpy(name)
     function spy.clear()
         spy.calls = {}
     end
-    function spy.allWith(calls)
-        lu.assertEquals(#calls == #spy.calls , true, 'not call ' .. #calls .. ' except ' .. #spy.calls)
+    function spy.allWith(calls, err)
+        lu.assertEquals(#calls == #spy.calls , true, tostring(err) .. ' not call ' .. #calls .. ' except ' .. #spy.calls)
         for i = 1, #calls do
             checkCall(i, table.unpack(calls[i]))
         end

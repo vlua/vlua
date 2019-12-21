@@ -2,6 +2,7 @@ local config = require("config")
 local Dep = require("observer.Dep")
 local Util = require("util.Util")
 local Utils = require("observer.Utils")
+local Computed = require("observer.Computed")
 local Lang = require("util.Lang")
 local isComputed = require("observer.Computed").isComputed
 local pairs = pairs
@@ -113,6 +114,12 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         end
     end
 
+    -- support function to computed
+    if type(val) == 'function' then
+        val = Computed.computed(val)
+    end
+
+    -- support computed
     if isComputed(val) then
         mt.__properties[key] = {
             val.getter,

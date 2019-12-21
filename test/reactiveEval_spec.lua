@@ -4,15 +4,15 @@ local lu = require("luaunit")
 local vlua = require("vlua")
 
 describe(
-    "reactiveEval sync",
+    "reactiveCall sync",
     function()
-        ---@type ReactiveEvalData
+        ---@type reactiveCallData
         local data
 
         beforeEach(
             function()
                 config.async = false
-                ---@class ReactiveEvalData
+                ---@class reactiveCallData
                 data = {
                     a = 1,
                     b = {
@@ -31,11 +31,12 @@ describe(
             function()
                 local print = lu.createSpy("print")
 
-                vlua.reactiveEval(
+                local context = vlua.reactiveCall(
                     function()
                         print(data.a, data.c, data.b.d)
                     end
                 )
+
 
                 lu.assertEquals(#print.calls, 1)
                 print.toHaveBeenCalledWith(1, "c", 4)
@@ -57,17 +58,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveEval(
+                    vlua.reactiveCall(
                     function()
                         print(data.a)
 
-                        vlua.reactiveEval(
+                        vlua.reactiveCall(
                             function()
                                 print(data.c)
                             end
                         )
 
-                        vlua.reactiveEval(
+                        vlua.reactiveCall(
                             function()
                                 print(data.b.d)
                             end
@@ -98,17 +99,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveEval(
+                    vlua.reactiveCall(
                     function()
                         print(data.a)
 
-                        vlua.reactiveEval(
+                        vlua.reactiveCall(
                             function()
                                 print(data.c)
-                                vlua.reactiveEval(
+                                vlua.reactiveCall(
                                     function()
                                         print(data.b.d)
-                                        vlua.reactiveEval(
+                                        vlua.reactiveCall(
                                             function()
                                                 print(data.b.d)
                                             end
@@ -141,15 +142,15 @@ describe(
 )
 
 describe(
-    "reactiveEval async",
+    "reactiveCall async",
     function()
-        ---@type ReactiveEvalData
+        ---@type reactiveCallData
         local data
 
         beforeEach(
             function()
                 config.async = true
-                ---@class ReactiveEvalData
+                ---@class reactiveCallData
                 data = {
                     a = 1,
                     b = {
@@ -168,7 +169,7 @@ describe(
             function()
                 local print = lu.createSpy("print")
 
-                vlua.reactiveEval(
+                vlua.reactiveCall(
                     function()
                         print(data.a, data.c, data.b.d)
                     end
@@ -202,17 +203,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveEval(
+                    vlua.reactiveCall(
                     function()
                         print(data.a)
 
-                        vlua.reactiveEval(
+                        vlua.reactiveCall(
                             function()
                                 print(data.c)
                             end
                         )
 
-                        vlua.reactiveEval(
+                        vlua.reactiveCall(
                             function()
                                 print(data.b.d)
                             end
@@ -255,17 +256,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveEval(
+                    vlua.reactiveCall(
                     function()
                         print(data.a)
 
-                        vlua.reactiveEval(
+                        vlua.reactiveCall(
                             function()
                                 print(data.c)
-                                vlua.reactiveEval(
+                                vlua.reactiveCall(
                                     function()
                                         print(data.b.d)
-                                        vlua.reactiveEval(
+                                        vlua.reactiveCall(
                                             function()
                                                 print(data.b.d)
                                             end

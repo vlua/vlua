@@ -29,9 +29,9 @@ describe(
         )
 
         it(
-            "value",
+            "simple computed",
             function()
-                vlua.reactiveEval(
+                vlua.reactiveCall(
                     function()
                         print(computedValue.value)
                     end
@@ -59,7 +59,7 @@ describe(
             end
         )
         it(
-            "value",
+            "get or get self",
             function()
                 local v = 1
                 
@@ -76,34 +76,33 @@ describe(
                     end
                 )
 
-                local data = vlua.reactive({id = computedValue})
+                local data = {id = computedValue}
+                vlua.reactive(data)
+                local aa = data.id
 
-                vlua.reactiveEval(
-                    function()
-                        print(data.id)
-                    end
-                )
+                get.allWith({{data, 1}}, 'self is data')
+                set.toHaventBeenCalled()
 
-                print.allWith({{1}})
+                get.clear()
+                set.clear()
+
+                local a = computedValue.value
+                get.allWith({{nil, 1}}, 'self is nil')
+                set.toHaventBeenCalled()
+                get.clear()
+                set.clear()
 
                 data.id = 2
-                lu.assertEquals(data.id , 2)
-                print.allWith({{2}})
+                get.toHaventBeenCalled()
+                set.allWith({{data, 2, 1}}, 'self is data')
+                get.clear()
+                set.clear()
 
-                data.id = 3
-                lu.assertEquals(data.id , 3)
-                data.id = 4
-                lu.assertEquals(data.id , 4)
-                print.allWith({{3}, {4}})
-
-                computedValue.set(2)
-                lu.assertEquals(computedValue.get() , 2)
-                print.allWith({{2}})
-                computedValue.set(3)
-                lu.assertEquals(computedValue.get() , 3)
-                computedValue.set(4)
-                lu.assertEquals(computedValue.get() , 4)
-                print.allWith({{3}, {4}})
+                computedValue.value = 3
+                get.toHaventBeenCalled()
+                set.allWith({{nil, 3, 2}}, 'self is data')
+                get.clear()
+                set.clear()
             end
         )
     end

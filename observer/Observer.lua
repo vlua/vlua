@@ -114,16 +114,18 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
     end
 
     if isComputed(val) then
-        getter = val.get
-        setter = val.set
-        hasProperty = true
+        mt.__properties[key] = {
+            val.getter,
+            val.setter
+        }
+        return
     end
 
     if not hasProperty then
-        getter = function()
+        getter = function(self)
             return val
         end
-        setter = function(newValue)
+        setter = function(self, newValue)
             val = newValue
         end
     end
@@ -133,8 +135,8 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
     local property = {}
     mt.__properties[key] = property
 
-    property[V_GETTER] = function()
-        local value = getter()
+    property[V_GETTER] = function(self)
+        local value = getter(self)
         if (Dep.target) then
             dep:depend()
             if (childOb) then
@@ -144,8 +146,8 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         return value
     end
 
-    property[V_SETTER] = function(newVal)
-        local value = getter()
+    property[V_SETTER] = function(self, newVal)
+        local value = getter(self)
 
         if (newVal == value) then
             return
@@ -155,7 +157,7 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
             customSetter()
         end
         childOb = not shallow and observe(newVal)
-        setter(newVal)
+        setter(self, newVal)
         dep:notify()
     end
 end
@@ -196,7 +198,7 @@ function Observer:constructor(value)
     mt.__newindex = function(self, key, newValue)
         local property = properties[key]
         if property then
-            property[V_SETTER](newValue)
+            property[V_SETTER](self, newValue)
         else
             defineReactive(value, key, newValue, nil, nil, mt)
             dep:notify()

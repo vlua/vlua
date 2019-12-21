@@ -68,11 +68,11 @@ local createGetterInvoker
 ---@param sourceKey string
 ---@param key string
 local function proxy(target, sourceKey, key)
-    local getter = function()
+    local getter = function(self)
         return target[sourceKey][key]
     end
-    local setter = function(val)
-        target[sourceKey][key] = val
+    local setter = function(self, newValue)
+        target[sourceKey][key] = newValue
     end
     defineProperty(target, key, getter, setter)
 end

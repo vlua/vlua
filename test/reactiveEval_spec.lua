@@ -76,25 +76,20 @@ describe(
                 )
 
                 print.allWith({{1}, {"c"}, {4}})
-                print.clear()
 
                 data.a = 2
                 print.allWith({{2}, {"c"}, {4}})
-                print.clear()
 
                 data.c = "e"
                 print.allWith({{"e"}})
-                print.clear()
 
                 data.b.d = 9
                 data.c = "f"
                 print.allWith({{9}, {"f"}})
-                print.clear()
 
                 data.b.d = 10
                 data.a = 11
                 print.allWith({{10}, {11}, {"f"}, {10}})
-                print.clear()
             end
         )
         it(
@@ -126,25 +121,20 @@ describe(
                 )
 
                 print.allWith({{1}, {"c"}, {4}, {4}})
-                print.clear()
 
                 data.a = 2
                 print.allWith({{2}, {"c"}, {4}, {4}})
-                print.clear()
 
                 data.c = "e"
                 print.allWith({{"e"}, {4}, {4}})
-                print.clear()
 
                 data.b.d = 9
                 data.c = "f"
                 print.allWith({{9}, {9}, {"f"}, {9}, {9}})
-                print.clear()
 
                 data.b.d = 10
                 data.a = 11
                 print.allWith({{10}, {10}, {11}, {"f"}, {10}, {10}})
-                print.clear()
             end
         )
     end
@@ -231,29 +221,25 @@ describe(
                 )
 
                 print.allWith({{1}, {"c"}, {4}})
-                print.clear()
 
                 data.a = 2
                 lu.assertEquals(#print.calls, 0)
 
                 waitForUpdate()
                 print.allWith({{2}, {"c"}, {4}})
-                print.clear()
 
                 data.c = "e"
                 lu.assertEquals(#print.calls, 0)
 
                 waitForUpdate()
                 print.allWith({{"e"}})
-                print.clear()
 
                 data.b.d = 9
                 data.c = "f"
                 lu.assertEquals(#print.calls, 0)
 
                 waitForUpdate()
-                print.allWith({ {"f"},{9}})
-                print.clear()
+                print.allWith({{"f"}, {9}})
 
                 data.b.d = 10
                 data.a = 11
@@ -261,7 +247,6 @@ describe(
 
                 waitForUpdate()
                 print.allWith({{11}, {"f"}, {10}})
-                print.clear()
             end
         )
         it(
@@ -293,21 +278,18 @@ describe(
                 )
 
                 print.allWith({{1}, {"c"}, {4}, {4}})
-                print.clear()
 
                 data.a = 2
                 lu.assertEquals(#print.calls, 0)
 
                 waitForUpdate()
                 print.allWith({{2}, {"c"}, {4}, {4}})
-                print.clear()
 
                 data.c = "e"
                 lu.assertEquals(#print.calls, 0)
 
                 waitForUpdate()
                 print.allWith({{"e"}, {4}, {4}})
-                print.clear()
 
                 data.b.d = 9
                 data.c = "f"
@@ -315,7 +297,6 @@ describe(
 
                 waitForUpdate()
                 print.allWith({{"f"}, {9}, {9}})
-                print.clear()
 
                 data.b.d = 10
                 data.a = 11
@@ -323,7 +304,6 @@ describe(
 
                 waitForUpdate()
                 print.allWith({{11}, {"f"}, {10}, {10}})
-                print.clear()
             end
         )
     end

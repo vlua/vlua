@@ -140,6 +140,7 @@ function lu.createSpy(name)
         for i = 1, #calls do
             checkCall(i, table.unpack(calls[i]))
         end
+        spy.clear()
     end
 
     function spy.toHaveBeenMemberCalledWith(...)
@@ -224,6 +225,7 @@ require("test.unit.features.instance.TestInit")
 require("test.unit.features.instance.methods-data")
 require("test.unit.features.instance.methods-events")
 require("test.reactiveEval_spec")
+require("test.computed_spec")
 
 local runner = lu.LuaUnit.new()
 runner:setOutputType("tap")

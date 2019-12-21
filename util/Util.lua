@@ -30,41 +30,41 @@ local function createPlainObjectMetatable()
     mt.__index = function(self, key)
         local property = properties[key]
         if property then
-            return property[V_GETTER]()
+            return property[V_GETTER](self)
         end
     end
 
     mt.__newindex = function(self, key, value)
         local property = properties[key]
         if property then
-            property[V_SETTER](value)
+            property[V_SETTER](self, value)
         else
             properties[key] = {
-                function()
+                function(self)
                     return value
                 end,
-                function(newValue)
+                function(self, newValue)
                     value = newValue
                 end
             }
         end
     end
 
-    mt.__pairs = function()
+    mt.__pairs = function(self)
         local key, valueStore
         return function()
             key, valueStore = next(properties, key)
-            return key, valueStore and valueStore[V_GETTER]()
+            return key, valueStore and valueStore[V_GETTER](self)
         end
     end
 
-    mt.__ipairs = function()
+    mt.__ipairs = function(self)
         local i = 1
         local valueStore
         return function()
             valueStore = properties[i]
             i = i + 1
-            return i, valueStore and valueStore[V_GETTER]()
+            return i, valueStore and valueStore[V_GETTER](self)
         end
     end
 

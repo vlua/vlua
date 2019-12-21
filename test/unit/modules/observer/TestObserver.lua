@@ -84,11 +84,11 @@ describe(
                 defineProperty(
                     obj,
                     "a",
-                    function()
+                    function(self)
                         getCount = getCount + 1
                         return val
                     end,
-                    function(v)
+                    function(self, v)
                         val = v
                     end
                 )
@@ -164,7 +164,7 @@ describe(
                     obj,
                     "a",
                     nil,
-                    function(v)
+                    function(self, v)
                         val = v
                     end
                 )
@@ -276,10 +276,10 @@ describe(
                 defineProperty(
                     obj,
                     "a",
-                    function()
+                    function(self)
                         return obj.val
                     end,
-                    function(v)
+                    function(self, v)
                         obj.val = v
                         return obj.val
                     end

@@ -118,17 +118,31 @@ function lu.createSpy(name)
         spy.call(...)
     end
 
-    function spy.toHaveBeenCalledWith(...)
+    local function checkCall(idx, ...)
         local args = {...}
-        lu.assertNotEquals(#spy.calls, 0, "not called with name:" .. name)
-        local callArgs = spy.calls[#spy.calls]
+        lu.assertEquals(idx <= #spy.calls and idx > 0, true, "not called with name:" .. name)
+        local callArgs = spy.calls[idx]
         lu.assertEquals(#args, #callArgs, "arg count not match with name:" .. name)
         for i, v in ipairs(args) do
             lu.assertEquals(v, callArgs[i], "arg not match with name:" .. name .. " arg :" .. i)
         end
     end
 
-    function spy.toHaveBeenMembberCalledWith(...)
+    function spy.toHaveBeenCalledWith(...)
+        checkCall(#spy.calls, ...)
+    end
+    
+    function spy.clear()
+        spy.calls = {}
+    end
+    function spy.allWith(calls)
+        lu.assertEquals(#calls == #spy.calls , true, 'not call ' .. #calls .. ' except ' .. #spy.calls)
+        for i = 1, #calls do
+            checkCall(i, table.unpack(calls[i]))
+        end
+    end
+
+    function spy.toHaveBeenMemberCalledWith(...)
         spy.toHaveBeenCalledWith(spy, ...)
     end
 
@@ -175,7 +189,7 @@ function lu.createSpyObj(name, fields)
         end
     end
 
-    function spy.toHaveBeenMembberCalledWith(fn, ...)
+    function spy.toHaveBeenMemberCalledWith(fn, ...)
         spy.toHaveBeenCalledWith(fn, spy, ...)
     end
 
@@ -209,6 +223,7 @@ require("test.unit.modules.observer.TestObserver")
 require("test.unit.features.instance.TestInit")
 require("test.unit.features.instance.methods-data")
 require("test.unit.features.instance.methods-events")
+require("test.reactiveEval_spec")
 
 local runner = lu.LuaUnit.new()
 runner:setOutputType("tap")

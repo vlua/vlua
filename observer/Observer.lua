@@ -3,6 +3,7 @@ local Dep = require("observer.Dep")
 local Util = require("util.Util")
 local Utils = require("observer.Utils")
 local Lang = require("util.Lang")
+local isComputed = require("observer.Computed").isComputed
 local pairs = pairs
 local ipairs = ipairs
 local next = next
@@ -61,7 +62,7 @@ local Observer = class("Observer")
 ---@return Observer | void
 ---@alias ReactiveObject table
 local function observe(value, asRootData)
-    if (not isObject(value)) --[[|| value instanceof VNode--]] then
+    if (type(value) ~= "table") then
         return
     end
 
@@ -110,6 +111,12 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
             val = obj[key]
             rawset(obj, key, nil)
         end
+    end
+
+    if isComputed(val) then
+        getter = val.get
+        setter = val.set
+        hasProperty = true
     end
 
     if not hasProperty then

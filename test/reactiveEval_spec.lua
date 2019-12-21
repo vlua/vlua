@@ -1,0 +1,330 @@
+local config = require("config")
+local lu = require("luaunit")
+
+local vlua = require("vlua")
+
+describe(
+    "reactiveEval sync",
+    function()
+        ---@type ReactiveEvalData
+        local data
+
+        beforeEach(
+            function()
+                config.async = false
+                ---@class ReactiveEvalData
+                data = {
+                    a = 1,
+                    b = {
+                        c = 2,
+                        d = 4
+                    },
+                    c = "c",
+                    msg = "yo"
+                }
+                vlua.reactive(data)
+            end
+        )
+
+        it(
+            "simple",
+            function()
+                local print = lu.createSpy("print")
+
+                vlua.reactiveEval(
+                    function()
+                        print(data.a, data.c, data.b.d)
+                    end
+                )
+
+                lu.assertEquals(#print.calls, 1)
+                print.toHaveBeenCalledWith(1, "c", 4)
+
+                data.a = 2
+                lu.assertEquals(#print.calls, 2)
+                print.toHaveBeenCalledWith(2, "c", 4)
+
+                data.c = "e"
+                data.b.d = 5
+                lu.assertEquals(#print.calls, 4)
+                print.toHaveBeenCalledWith(2, "e", 5)
+            end
+        )
+
+        it(
+            "child",
+            function()
+                local print = lu.createSpy("print")
+
+                local content =
+                    vlua.reactiveEval(
+                    function()
+                        print(data.a)
+
+                        vlua.reactiveEval(
+                            function()
+                                print(data.c)
+                            end
+                        )
+
+                        vlua.reactiveEval(
+                            function()
+                                print(data.b.d)
+                            end
+                        )
+                    end
+                )
+
+                print.allWith({{1}, {"c"}, {4}})
+                print.clear()
+
+                data.a = 2
+                print.allWith({{2}, {"c"}, {4}})
+                print.clear()
+
+                data.c = "e"
+                print.allWith({{"e"}})
+                print.clear()
+
+                data.b.d = 9
+                data.c = "f"
+                print.allWith({{9}, {"f"}})
+                print.clear()
+
+                data.b.d = 10
+                data.a = 11
+                print.allWith({{10}, {11}, {"f"}, {10}})
+                print.clear()
+            end
+        )
+        it(
+            "deep child",
+            function()
+                local print = lu.createSpy("print")
+
+                local content =
+                    vlua.reactiveEval(
+                    function()
+                        print(data.a)
+
+                        vlua.reactiveEval(
+                            function()
+                                print(data.c)
+                                vlua.reactiveEval(
+                                    function()
+                                        print(data.b.d)
+                                        vlua.reactiveEval(
+                                            function()
+                                                print(data.b.d)
+                                            end
+                                        )
+                                    end
+                                )
+                            end
+                        )
+                    end
+                )
+
+                print.allWith({{1}, {"c"}, {4}, {4}})
+                print.clear()
+
+                data.a = 2
+                print.allWith({{2}, {"c"}, {4}, {4}})
+                print.clear()
+
+                data.c = "e"
+                print.allWith({{"e"}, {4}, {4}})
+                print.clear()
+
+                data.b.d = 9
+                data.c = "f"
+                print.allWith({{9}, {9}, {"f"}, {9}, {9}})
+                print.clear()
+
+                data.b.d = 10
+                data.a = 11
+                print.allWith({{10}, {10}, {11}, {"f"}, {10}, {10}})
+                print.clear()
+            end
+        )
+    end
+)
+
+describe(
+    "reactiveEval async",
+    function()
+        ---@type ReactiveEvalData
+        local data
+
+        beforeEach(
+            function()
+                config.async = true
+                ---@class ReactiveEvalData
+                data = {
+                    a = 1,
+                    b = {
+                        c = 2,
+                        d = 4
+                    },
+                    c = "c",
+                    msg = "yo"
+                }
+                vlua.reactive(data)
+            end
+        )
+
+        it(
+            "simple",
+            function()
+                local print = lu.createSpy("print")
+
+                vlua.reactiveEval(
+                    function()
+                        print(data.a, data.c, data.b.d)
+                    end
+                )
+
+                lu.assertEquals(#print.calls, 1)
+                print.toHaveBeenCalledWith(1, "c", 4)
+
+                data.a = 2
+                lu.assertEquals(#print.calls, 1)
+
+                waitForUpdate()
+
+                lu.assertEquals(#print.calls, 2)
+                print.toHaveBeenCalledWith(2, "c", 4)
+
+                data.c = "e"
+                lu.assertEquals(#print.calls, 2)
+                data.b.d = 5
+                lu.assertEquals(#print.calls, 2)
+
+                waitForUpdate()
+                lu.assertEquals(#print.calls, 3)
+                print.toHaveBeenCalledWith(2, "e", 5)
+            end
+        )
+
+        it(
+            "child",
+            function()
+                local print = lu.createSpy("print")
+
+                local content =
+                    vlua.reactiveEval(
+                    function()
+                        print(data.a)
+
+                        vlua.reactiveEval(
+                            function()
+                                print(data.c)
+                            end
+                        )
+
+                        vlua.reactiveEval(
+                            function()
+                                print(data.b.d)
+                            end
+                        )
+                    end
+                )
+
+                print.allWith({{1}, {"c"}, {4}})
+                print.clear()
+
+                data.a = 2
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{2}, {"c"}, {4}})
+                print.clear()
+
+                data.c = "e"
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{"e"}})
+                print.clear()
+
+                data.b.d = 9
+                data.c = "f"
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({ {"f"},{9}})
+                print.clear()
+
+                data.b.d = 10
+                data.a = 11
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{11}, {"f"}, {10}})
+                print.clear()
+            end
+        )
+        it(
+            "deep child",
+            function()
+                local print = lu.createSpy("print")
+
+                local content =
+                    vlua.reactiveEval(
+                    function()
+                        print(data.a)
+
+                        vlua.reactiveEval(
+                            function()
+                                print(data.c)
+                                vlua.reactiveEval(
+                                    function()
+                                        print(data.b.d)
+                                        vlua.reactiveEval(
+                                            function()
+                                                print(data.b.d)
+                                            end
+                                        )
+                                    end
+                                )
+                            end
+                        )
+                    end
+                )
+
+                print.allWith({{1}, {"c"}, {4}, {4}})
+                print.clear()
+
+                data.a = 2
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{2}, {"c"}, {4}, {4}})
+                print.clear()
+
+                data.c = "e"
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{"e"}, {4}, {4}})
+                print.clear()
+
+                data.b.d = 9
+                data.c = "f"
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{"f"}, {9}, {9}})
+                print.clear()
+
+                data.b.d = 10
+                data.a = 11
+                lu.assertEquals(#print.calls, 0)
+
+                waitForUpdate()
+                print.allWith({{11}, {"f"}, {10}, {10}})
+                print.clear()
+            end
+        )
+    end
+)

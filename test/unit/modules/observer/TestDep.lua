@@ -55,7 +55,7 @@ describe('Dep', function()
             local spy = lu.createSpyObj('TARGET', {'addDep'})
             Dep.target = spy
             dep:depend()
-            spy.toHaveBeenMembberCalledWith(Dep.target.addDep, dep)
+            spy.toHaveBeenMemberCalledWith(Dep.target.addDep, dep)
         end)
         end)
 

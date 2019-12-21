@@ -1,6 +1,7 @@
 local vlua = require('vlua')
 local Watcher = require('observer.Watcher')
 local CallContext = require('observer.CallContext')
+local HookIds = CallContext.HookIds
 local tinsert = table.insert
 
 local Generic = {}
@@ -10,18 +11,38 @@ Generic.install = function()
     ---@param expOrFn string | Function
     ---@param cb Function
     ---@param options WatcherOptions
-    function CallContext:watch(expOrFn, cb, options)
+    function vlua.watch(expOrFn, cb, options)
         -- watch and run one time
-        return Watcher.new(self, expOrFn, cb, options)
+        return Watcher.new(CallContext.target, expOrFn, cb, options)
     end
 
     --- call when CallContext teardown
-    function CallContext:onMount(callback)
-        tinsert(self._watchers, {teardown = callback})
+    function vlua.onBeforeMount(cb)
+        CallContext.target:on(HookIds.beforeMount, cb)
     end
-    --- call when CallContext teardown
-    function CallContext:onUnmount(callback)
-        tinsert(self._watchers, {teardown = callback})
+
+    function vlua.onMount(cb)
+        CallContext.target:on(HookIds.mounted, cb)
+    end
+
+    function vlua.onBeforeCreate(cb)
+        CallContext.target:on(HookIds.beforeCreate, cb)
+    end
+
+    function vlua.onCreated(cb)
+        CallContext.target:on(HookIds.created, cb)
+    end
+
+    function vlua.onBeforeDestroy(cb)
+        CallContext.target:on(HookIds.beforeDestroy, cb)
+    end
+
+    function vlua.onDestroyed(cb)
+        CallContext.target:on(HookIds.destroyed, cb)
+    end
+
+    function vlua.onErrorCaptured(cb)
+        CallContext.target:on(HookIds.errorCaptured, cb)
     end
 
 end

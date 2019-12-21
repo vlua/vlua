@@ -5,62 +5,41 @@ local CallContext = require("observer.CallContext")
 local warn = Util.warn
 local debug = debug
 local pcall = pcall
-local tinsert, tpop = table.insert, table.remove
+local tinsert = table.insert
 local HookIds = CallContext.HookIds
-
--- The current target watcher being evaluated.
--- This is globally unique because only one watcher
--- can be evaluated at a time.
----@type CallContext
-local target = nil
-local targetStack = {}
-
----@param context CallContext
-local function pushContext(context)
-    tinsert(targetStack, context)
-    target = context
-    -- unwatch all children
-    if context.children then
-        for i = #context.children, 1, -1 do
-            context.children[i]:teardown()
-        end
-        context.children = nil
-    end
-end
-
-local function popContext()
-    tpop(targetStack)
-    target = targetStack[#targetStack]
-end
+local pushContext, popContext = CallContext.pushContext, CallContext.popContext
 
 ---@param fn fun():nil
 local function reactiveCall(fn)
     -- a content hold my watches and all children
     local context = CallContext.new()
-    context:callHook(HookIds.beforeCreate)
+    context:emit(HookIds.beforeCreate)
 
     local reactiveFn = function()
-        context:callHook(HookIds.beforeMount)
+        context:emit(HookIds.beforeMount)
         pushContext(context)
         local status, value = pcall(fn)
         popContext()
         if not status then
             warn("error when reactiveCall:" .. value .. " stack :" .. debug.traceback())
-            context:callHook(HookIds.errorCaptured, value)
+            context:emit(HookIds.errorCaptured, value)
             value = nil
         end
-        context:callHook(HookIds.mounted, value)
+        context:emit(HookIds.mounted, value)
     end
     -- watch and run one time
     local watcher = Watcher.new(context, reactiveFn, nil, {})
     -- add to parent
+    local target = CallContext.target
     if target then
-        if not target.children then
-            target.children = {}
+        local children = target.children
+        if not children then
+            children = {}
+            target.children = children
         end
-        tinsert(target.children, context)
+        tinsert(children, context)
     end
-    context:callHook(HookIds.created, watcher.value)
+    context:emit(HookIds.created, watcher.value)
     return context
 end
 

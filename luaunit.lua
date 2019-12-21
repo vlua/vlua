@@ -1994,7 +1994,7 @@ function genericOutput:updateStatus(node)
 end
 
 function genericOutput:endTest(node) 
-    -- called when the test is finished, after the tearDown() method
+    -- called when the test is finished, after the teardown() method
 end
 
 function genericOutput:endClass() 
@@ -2963,14 +2963,14 @@ end
                 self:updateStatus(self:protectedCall(classInstance, methodInstance, prettyFuncName))
             end
 
-            -- lastly, run tearDown (if any)
+            -- lastly, run teardown (if any)
             if classInstance then
-                local func = self.asFunction( classInstance.tearDown ) or
+                local func = self.asFunction( classInstance.teardown ) or
                              self.asFunction( classInstance.TearDown ) or
                              self.asFunction( classInstance.teardown ) or
                              self.asFunction( classInstance.Teardown )
                 if func then
-                    self:updateStatus(self:protectedCall(classInstance, func, className..'.tearDown'))
+                    self:updateStatus(self:protectedCall(classInstance, func, className..'.teardown'))
                 end
             end
         end

@@ -39,7 +39,7 @@ local function shouldObserve()
 end
 
 local function isReactivableObject(obj)
-    return type(obj) == "table" and (getmetatable(obj) == nil or instanceof(obj, PlainObject))
+    return type(obj) == "table" and (getmetatable(obj) == nil)
 end
 
 --[[
@@ -94,24 +94,9 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
     local dep = Dep.new()
     mt = mt or getmetatable(obj)
 
-    local getter, setter
-
-    local hasProperty = false
     if val == nil then
-        ---@type ReactiveMetatable
-        local plainObjectMetatable = getmetatable(obj)
-        if plainObjectMetatable then
-            local prop = plainObjectMetatable.__properties[key]
-            if prop then
-                getter = prop[V_GETTER]
-                setter = prop[V_SETTER]
-                hasProperty = true
-            end
-        end
-        if not hasProperty then
-            val = obj[key]
-            rawset(obj, key, nil)
-        end
+        val = obj[key]
+        rawset(obj, key, nil)
     end
 
     -- support function to computed
@@ -128,35 +113,23 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         return
     end
 
-    if not hasProperty then
-        getter = function(self)
-            return val
-        end
-        setter = function(self, newValue)
-            val = newValue
-        end
-    end
-
     local childOb = not shallow and observe(val)
 
     local property = {}
     mt.__properties[key] = property
 
     property[V_GETTER] = function(self)
-        local value = getter(self)
         if (Dep.target) then
             dep:depend()
             if (childOb) then
                 childOb.dep:depend()
             end
         end
-        return value
+        return val
     end
 
     property[V_SETTER] = function(self, newVal)
-        local value = getter(self)
-
-        if (newVal == value) then
+        if (newVal == val) then
             return
         end
 
@@ -164,7 +137,7 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
             customSetter()
         end
         childOb = not shallow and observe(newVal)
-        setter(self, newVal)
+        val = newVal
         dep:notify()
     end
 end
@@ -202,6 +175,13 @@ function Observer:constructor(value)
     -- }
 
     local properties = mt.__properties
+    
+    mt.__index = function(self, key)
+        local property = properties[key]
+        if property then
+            return property[V_GETTER](self)
+        end
+    end
     mt.__newindex = function(self, key, newValue)
         local property = properties[key]
         if property then

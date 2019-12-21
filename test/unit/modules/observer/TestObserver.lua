@@ -3,6 +3,7 @@ local Vue = require("instance.Vue")
 local Dep = require("observer.Dep")
 local Util = require("util.Util")
 local Lang = require("util.Lang")
+local vlua = require("vlua")
 local instanceof = Lang.instanceof
 local hasOwn, createObject = Util.hasOwn, Util.createObject
 local Observer = require("observer.Observer")
@@ -78,12 +79,11 @@ describe(
             "create on already observed object",
             function()
                 -- on object
-                local obj = createPlainObject()
+                local obj = {}
                 local val = 0
                 local getCount = 0
-                defineProperty(
-                    obj,
-                    "a",
+                obj.a =
+                    vlua.computed(
                     function(self)
                         getCount = getCount + 1
                         return val
@@ -119,14 +119,11 @@ describe(
             "create on property with only getter",
             function()
                 -- on object
-                local obj = createPlainObject()
-                defineProperty(
-                    obj,
-                    "a",
-                    function()
+                local obj = {
+                    a = function()
                         return 123
                     end
-                )
+                }
 
                 local ob1 = observe(obj)
                 lu.assertEquals(instanceof(ob1, Observer), true)
@@ -157,18 +154,16 @@ describe(
         it(
             "create on property with only setter",
             function()
+                local val
                 -- on object
-                local obj = createPlainObject()
-                local val = 10
-                defineProperty(
-                    obj,
-                    "a",
-                    nil,
-                    function(self, v)
-                        val = v
-                    end
-                )
-
+                local obj = {
+                    a = vlua.computed(
+                        nil,
+                        function(self, v)
+                            val = v
+                        end
+                    )
+                }
                 local ob1 = observe(obj)
                 lu.assertEquals(instanceof(ob1, Observer), true)
                 lu.assertEquals(ob1.value, obj)
@@ -191,14 +186,11 @@ describe(
             "create on property which is marked not configurable",
             function()
                 -- on object
-                local obj = createPlainObject()
-                defineProperty(
-                    obj,
-                    "a",
-                    function()
+                local obj = {
+                    a = function()
                         return 10
                     end
-                )
+                }
 
                 local ob1 = observe(obj)
                 lu.assertEquals(instanceof(ob1, Observer), true)
@@ -485,17 +477,15 @@ describe(
         it(
             "should lazy invoke existing getters",
             function()
-                local obj = createPlainObject()
                 local called = 0
-                defineProperty(
-                    obj,
-                    "getterProp",
-                    function()
+                local obj =
+                    vlua.reactive {
+                    getterProp = function()
                         called = called + 1
                         return "some value"
                     end
-                )
-                observe(obj)
+                }
+                local a = obj.getterProp
                 lu.assertEquals(called, 1)
             end
         )

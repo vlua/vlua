@@ -6,10 +6,9 @@ local tinsert, tpop = table.insert, table.remove
 local CallContext = Lang.class("EvalContent")
 
 local HookIds = {
-    beforeMount = 'beforeMount',
     mounted = 'mounted',
-    beforeCreate = "beforeCreate",
     created = "created",
+    update = 'update',
     beforeDestroy = "beforeDestroy",
     destroyed = "destroyed",
     errorCaptured = "errorCaptured",

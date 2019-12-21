@@ -13,10 +13,9 @@ local pushContext, popContext = CallContext.pushContext, CallContext.popContext
 local function reactiveCall(fn)
     -- a content hold my watches and all children
     local context = CallContext.new()
-    context:emit(HookIds.beforeCreate)
 
     local reactiveFn = function()
-        context:emit(HookIds.beforeMount)
+        context:emit(HookIds.update)
         pushContext(context)
         local status, value = pcall(fn)
         popContext()

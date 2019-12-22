@@ -5,7 +5,7 @@ local pairs = pairs
 ---@class Binder
 ---@field watchers Watcher[]
 local Binder = Lang.class("Binder")
-function Binder:constructor(source, parent)
+function Binder:ctor(source, parent)
     self.source = source
     self.parent = parent
 end

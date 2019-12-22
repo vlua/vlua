@@ -19,7 +19,7 @@ local uid = 0
 ---@field id number
 ---@field subs Watcher[]
 local Dep = class("Dep")
-function Dep:constructor()
+function Dep:ctor()
     uid = uid + 1
     self.id = uid
     self.subs = {}

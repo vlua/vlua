@@ -88,17 +88,22 @@ local function slice(array)
 end
 
 ---@param name string
-local function class(name)
+local function class(name, super)
     local cls = {}
     cls.__name = name
     cls.__index = cls
     cls.new = function(...)
         local instance = {}
         setmetatable(instance, cls)
-        cls.constructor(instance, ...)
+        if cls.ctor then
+            cls.ctor(instance, ...)
+        end
         return instance
     end
-    return cls
+    if super then
+        setmetatable(cls, super)
+    end
+    return cls, super
 end
 
 -- http://phi.lho.free.fr/programming/TestLuaArray.lua.html

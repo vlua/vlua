@@ -155,7 +155,7 @@ local function walk(obj, mt)
 end
 
 ---@param value ReactiveObject
-function Observer:constructor(value)
+function Observer:ctor(value)
     self.value = value
     local dep = Dep.new()
     self.dep = dep

@@ -23,8 +23,8 @@ Generic.install = function()
         )
     end
 
-    function vlua.createBinder(target)
-        local binder = Binder.new(target)
+    function vlua.createBinder(source)
+        local binder = Binder.new(source)
         vlua.onUnmount(
             function()
                 binder:teardown()

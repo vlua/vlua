@@ -22,6 +22,7 @@ local vlua = {
     computed = Computed.computed,
     reactive = reactive,
     reactiveCall = ReactiveCall.reactiveCall,
+    new = ReactiveCall.reactiveCall,
     use = use
 }
 return vlua

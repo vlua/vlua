@@ -26,6 +26,7 @@ local uid = 0
 ---@field lazy boolean
 ---@field sync boolean
 ---@field before Function
+---@field onStop Function
 
 ---@alias SimpleSet table
 ---@alias Function fun():nil
@@ -55,14 +56,14 @@ local uid = 0
 local Watcher = class("Watcher")
 
 local function _()
-    Watcher.new = Watcher.constructor
+    Watcher.new = Watcher.ctor
 end
 ---@param source any
 ---@param expOrFn string | Function
 ---@param cb Function
 ---@param options WatcherOptions
 ---@return Watcher
-function Watcher:constructor(source, expOrFn, cb, options)
+function Watcher:ctor(source, expOrFn, cb, options)
     self.source = source
     -- options
     if (options) then

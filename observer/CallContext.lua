@@ -6,8 +6,6 @@ local pairs = pairs
 ---@field children CallContext[]
 ---@field events table<string, fun():nil>
 local CallContext = Lang.class("EvalContent")
-function CallContext:constructor()
-end
 
 local HookIds = {
     mounted = 1,

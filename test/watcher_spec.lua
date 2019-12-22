@@ -1,4 +1,4 @@
-local lu = require("luaunit")
+local lu = require("test.luaunit")
 local Watcher = require("vlua.watcher")
 local vlua = require("vlua.vlua")
 

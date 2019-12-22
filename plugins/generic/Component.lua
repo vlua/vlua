@@ -1,5 +1,5 @@
 local Util = require("util.util")
-local vlua = require("vlua")
+local vlua = require("vlua.vlua")
 
 local Component = Util.class("Component")
 

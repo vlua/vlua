@@ -1,4 +1,4 @@
-local lu = require("luaunit")
+local lu = require("test.luaunit")
 local vlua = require("vlua.vlua")
 local warn = print
 

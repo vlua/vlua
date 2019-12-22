@@ -1,9 +1,4 @@
-local vlua = require("vlua")
-local Watcher = require("vlua.watcher")
-local CallContext = require("vlua.callContext")
 local Binder = require("plugins.generic.Binder")
-local HookIds = CallContext.HookIds
-local tinsert = table.insert
 
 local ui = {}
 

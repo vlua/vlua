@@ -1,4 +1,4 @@
-local Binder = require("plugins.generic.Binder")
+local Binder = require("plugins.generic.binder")
 
 local ui = {}
 

@@ -1,4 +1,4 @@
-local Util = require("util.util")
+local Util = require("vlua.util")
 local Watcher = require("vlua.watcher")
 local pairs = pairs
 

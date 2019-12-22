@@ -1,9 +1,10 @@
 local vlua = require('vlua.vlua')
+local ui = require('plugins.xlua.ui')
 
 local Generic = {}
 
 Generic.install = function()
-    vlua.use(require('plugins.xlua.ui'))
+    vlua.use(ui)
 end
 
 

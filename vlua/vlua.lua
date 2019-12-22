@@ -1,6 +1,6 @@
-local Computed = require("vlua.computed")
+local Computed = require("vlua.apiComputed")
 local Observer = require("vlua.observer")
-local Ref = require("vlua.ref")
+local Ref = require("vlua.apiRef")
 local apiNew = require("vlua.apiNew")
 local observe = Observer.observe
 

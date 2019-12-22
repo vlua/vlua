@@ -16,9 +16,12 @@ local function use(plugin)
     plugin.install()
 end
 
-return {
+---@class vlua
+local vlua = {
     ref = Ref.ref,
     computed = Computed.computed,
     reactive = reactive,
-    reactiveCall = ReactiveCall.reactiveCall
+    reactiveCall = ReactiveCall.reactiveCall,
+    use = use
 }
+return vlua

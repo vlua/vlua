@@ -1,17 +1,19 @@
 local Lang = require("util.Lang")
 local tinsert, tpop = table.insert, table.remove
+local pairs = pairs
+
 ---@class CallContext
 ---@field children CallContext[]
 ---@field events table<string, fun():nil>
 local CallContext = Lang.class("EvalContent")
+function CallContext:constructor()
+end
 
 local HookIds = {
-    mounted = 'mounted',
-    created = "created",
-    update = 'update',
-    beforeDestroy = "beforeDestroy",
-    destroyed = "destroyed",
-    errorCaptured = "errorCaptured",
+    mounted = 1,
+    unmount = 2,
+    destroy = 3,
+    errorCaptured = 4,
 }
 CallContext.HookIds = HookIds
 
@@ -26,13 +28,6 @@ local targetStack = {}
 function CallContext.pushContext(context)
     tinsert(targetStack, context)
     CallContext.target = context
-    -- unwatch all children
-    if context.children then
-        for i = #context.children, 1, -1 do
-            context.children[i]:teardown()
-        end
-        context.children = nil
-    end
 end
 
 function CallContext.popContext()
@@ -40,46 +35,29 @@ function CallContext.popContext()
     CallContext.target = targetStack[#targetStack]
 end
 
-function CallContext:constructor()
-    ---@type Watcher[]
-    self._watchers = {}
-end
-
 function CallContext:emit(event, ...)
-    local events = self.events
+    local events = self[event]
     if not events then
         return
     end
-    local cbs = events[event]
-    if not cbs then
-        return
-    end
-    for _, cb in pairs(cbs) do
+    for _, cb in pairs(events) do
         cb(...)
     end
 end
 
 function CallContext:on(event, cb)
-    local events = self.events
+    local events = self[event]
     if not events then
         events = {}
-        self.events = events
+        self[event] = events
     end
-    local cbs = events[event]
-    if not cbs then
-        cbs = {}
-        events[event] = cbs
-    end
-    cbs[cb] = cb
+    events[cb] = cb
 end
 
 function CallContext:off(event, cb)
-    local events = self.events
+    local events = self[event]
     if events then
-        local cbs = events[event]
-        if cbs then
-            cbs[cb] = nil
-        end
+        events[cb] = nil
     end
 end
 
@@ -91,23 +69,10 @@ function CallContext:once(event, cb)
     self:on(event, callback)
 end
 
---- unwatch all watcher and children's watcher
+--- unwatch all watcher and teardown
 function CallContext:teardown()
-    self:emit(HookIds.beforeDestroy)
-    -- unwatch my watcher
-    for i = #self._watchers, 1, -1 do
-        self._watchers[i]:teardown()
-    end
-    self._watchers = nil
-    -- unwatch all children
-    if self.children then
-        for i = #self.children, 1, -1 do
-            self.children[i]:teardown()
-        end
-        self.children = nil
-    end
-    self:emit(HookIds.destroyed)
-    self.events = nil
+    self:emit(HookIds.unmount)
+    self:emit(HookIds.destroy)
 end
 
 return CallContext

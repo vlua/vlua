@@ -19,44 +19,24 @@ local MAX_UPDATE_COUNT = 100
 
 ---@type Watcher[]
 local queue = {}
----@type Component[]
-local activatedChildren = {}
 ---@type table<number, boolean>
 local has = {}
 ---@type table<number, number>
 local circular = {}
 local waiting = false
 local flushing = false
-local index = 0
-
-local callUpdatedHooks
-local callActivatedHooks
-
---[[
+local index = 0--[[
  * Reset the scheduler's state.
  --]]
 local function resetSchedulerState()
     index = 1
     queue = {}
-    activatedChildren = {}
     has = {}
     if (config.env ~= "production") then
         circular = {}
     end
     waiting = false
     flushing = false
-end
-
--- Async edge case #6566 requires saving the timestamp when event listeners are
--- attached. However, calling performance.now() has a perf overhead especially
--- if the page has thousands of event listeners. Instead, we take a timestamp
--- every time the scheduler flushes and use that for all event listeners
--- attached during that flush.
-local currentFlushTimestamp = 0
-
--- Async edge case fix requires storing an event listener's attach timestamp.
-local function getNow()
-    return os.clock()
 end
 
 local function compareQueue(a, b)
@@ -66,7 +46,6 @@ end
  * Flush both queues and run the watchers.
  --]]
 local function flushSchedulerQueue()
-    currentFlushTimestamp = getNow()
     flushing = true
     ---@type Watcher
     local watcher
@@ -108,52 +87,12 @@ local function flushSchedulerQueue()
         end
     end
 
-    -- keep copies of post queues before resetting state
-    local activatedQueue = slice(activatedChildren)
-    local updatedQueue = slice(queue)
-
     resetSchedulerState()
-
-    -- call component updated and activated hooks
-    callActivatedHooks(activatedQueue)
-    callUpdatedHooks(updatedQueue)
 
     -- devtool hook
     --[[ istanbul ignore if --]]
     if (devtools and config.devtools) then
         devtools.emit("flush")
-    end
-end
-
-callUpdatedHooks = function(queue)
-    for i = #queue, 1, -1 do
-        local watcher = queue[i]
-        local vm = watcher.vm
-        if (vm._watcher == watcher and vm._isMounted and not vm._isDestroyed) then
-            callHook(vm, "updated")
-        end
-    end
-end
-
---[[
- * Queue a kept-alive component that was activated during patch.
- * The queue will be processed after the entire tree has been patched.
- --]]
----@param vm Component
-local function queueActivatedComponent(vm)
-    -- setting _inactive to false here so that a render function can
-    -- rely on checking whether it's in an inactive tree (e.g. router-view)
-    vm._inactive = false
-    tinsert(activatedChildren, vm)
-end
-local activateChildComponent
-callActivatedHooks = function(queue)
-    if not activateChildComponent then
-        activateChildComponent = require("instance.Lifecycle").activateChildComponent
-    end
-    for i = 1, #queue do
-        queue[i]._inactive = true
-        activateChildComponent(queue[i], true --[[ true --]])
     end
 end
 

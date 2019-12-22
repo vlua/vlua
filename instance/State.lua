@@ -5,10 +5,11 @@ local Watcher = require("observer.Watcher")
 local Dep = require("observer.Dep")
 local Util = require("util.Util")
 local Props = require("util.Props")
+local Lifecycle = require("instance.Lifecycle")
 local pushTarget, popTarget = Dep.pushTarget, Dep.popTarget
 
-local isUpdatingChildComponent = require("instance.Lifecycle").isUpdatingChildComponent
-
+local isUpdatingChildComponent = Lifecycle.isUpdatingChildComponent
+local removeFromVm = Lifecycle.removeFromVm
 local tinsert, tremove = table.insert, table.remove
 local type = type
 local pairs = pairs
@@ -210,7 +211,7 @@ getData = function(data, vm)
     return ret
 end
 
-local computedWatcherOptions = {lazy = true}
+local computedWatcherOptions = {lazy = true, onStop = removeFromVm}
 
 ---@param vm Component
 ---@param computed table
@@ -382,6 +383,7 @@ local function stateMixin(Vue)
         end
         options = options or {}
         options.user = true
+        options.onStop = removeFromVm
         local watcher = Watcher.new(vm, expOrFn, cb, options)
         if (options.immediate) then
             --   try {

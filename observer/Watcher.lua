@@ -35,7 +35,7 @@ local uid = 0
  * This is used for both the $watch() api and directives.
 --]]
 ---@class Watcher
----@field vm Component
+---@field source any
 ---@field expression string
 ---@field cb Function
 ---@field id number
@@ -57,18 +57,13 @@ local Watcher = class("Watcher")
 local function _()
     Watcher.new = Watcher.constructor
 end
----@param vm Component
+---@param source any
 ---@param expOrFn string | Function
 ---@param cb Function
 ---@param options WatcherOptions
----@param isRenderWatcher boolean
 ---@return Watcher
-function Watcher:constructor(vm, expOrFn, cb, options, isRenderWatcher)
-    self.vm = vm
-    if (isRenderWatcher) then
-        vm._watcher = self
-    end
-    tinsert(vm._watchers, self)
+function Watcher:constructor(source, expOrFn, cb, options)
+    self.source = source
     -- options
     if (options) then
         self.deep = options.deep
@@ -76,6 +71,7 @@ function Watcher:constructor(vm, expOrFn, cb, options, isRenderWatcher)
         self.lazy = options.lazy
         self.sync = options.sync
         self.before = options.before
+        self.onStop = options.onStop
     else
         self.deep = false
         self.user = false
@@ -119,7 +115,7 @@ function Watcher:get()
     pushTarget(self)
     local value
     -- try {
-    value = self.getter(self.vm)
+    value = self.getter(self.source)
     -- } catch (e) {
     --   if (self.user) {
     --     handleError(e, vm, 'getter for watcher "${self.expression}"')
@@ -204,9 +200,9 @@ function Watcher:run()
                 --     handleError(e, self.vm, 'callback for watcher "${self.expression}"')
                 --   }
                 --   try {
-                self.cb(self.vm, value, oldValue)
+                self.cb(self.source, value, oldValue)
             else
-                self.cb(self.vm, value, oldValue)
+                self.cb(self.source, value, oldValue)
             end
         end
     end
@@ -231,11 +227,8 @@ end
 --- Remove self from all dependencies' subscriber list.
 function Watcher:teardown()
     if (self.active) then
-        -- remove self from vm's watcher list
-        -- self is a somewhat expensive operation so we skip it
-        -- if the vm is being destroyed.
-        if (not self.vm._isBeingDestroyed) then
-            removeArrayItem(self.vm._watchers, self)
+        if self.onStop then
+            self.onStop(self.source)
         end
         for i = #self.deps, 1, -1 do
             self.deps[i]:removeSub(self)

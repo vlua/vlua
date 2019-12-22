@@ -1,6 +1,7 @@
 local config = require("config")
 local Watcher = require("observer.Watcher")
 local Observer = require("observer.Observer")
+local Utils = require("observer.Utils")
 local Perf = require("util.Perf")
 local Util = require("util.Util")
 local Events = require("instance.Events")
@@ -10,6 +11,7 @@ local updateComponentListeners = Events.updateComponentListeners
 --local  resolveSlots } from './render-helpers/resolve-slots'
 local toggleObserving = Observer.toggleObserving
 local tinsert, tremove = table.insert, table.remove
+local removeArrayItem = Utils.removeArrayItem
 
 local callHook = Events.callHook
 local warn, noop, remove, emptyObject, validateProp =
@@ -31,6 +33,15 @@ local function setActiveInstance(vm)
     activeInstance = vm
     return function()
         activeInstance = prevActiveInstance
+    end
+end
+
+local removeFromVm = function(vm)
+    -- remove self from vm's watcher list
+    -- self is a somewhat expensive operation so we skip it
+    -- if the vm is being destroyed.
+    if (not vm._isBeingDestroyed) then
+        removeArrayItem(vm._watchers, vm)
     end
 end
 
@@ -210,9 +221,10 @@ mountComponent = function(vm, el, hydrating)
                 if (vm._isMounted and not vm._isDestroyed) then
                     callHook(vm, "beforeUpdate")
                 end
-            end
-        },
-        true --[[ isRenderWatcher ]]
+            end,
+            onStop = removeFromVm
+        }
+        --, true --[[ isRenderWatcher ]]
     )
     hydrating = false
 
@@ -358,5 +370,6 @@ return {
     lifecycleMixin = lifecycleMixin,
     mountComponent = mountComponent,
     updateChildComponent = updateChildComponent,
-    deactivateChildComponent = deactivateChildComponent
+    deactivateChildComponent = deactivateChildComponent,
+    removeFromVm = removeFromVm
 }

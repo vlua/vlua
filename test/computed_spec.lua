@@ -31,7 +31,7 @@ describe(
         it(
             "simple computed",
             function()
-                vlua.reactiveCall(
+                vlua.new(
                     function()
                         print(computedValue.value)
                     end

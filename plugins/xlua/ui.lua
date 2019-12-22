@@ -1,4 +1,4 @@
-local Binder = require("plugins.generic.binder")
+local Binder = require("vlua.binder")
 
 local ui = {}
 

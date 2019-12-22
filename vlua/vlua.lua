@@ -1,7 +1,7 @@
 local Computed = require("vlua.computed")
 local Observer = require("vlua.observer")
 local Ref = require("vlua.ref")
-local ReactiveCall = require("vlua.reactiveCall")
+local apiNew = require("vlua.apiNew")
 local observe = Observer.observe
 
 
@@ -16,13 +16,14 @@ local function use(plugin)
     plugin.install()
 end
 
+
 ---@class vlua
 local vlua = {
     ref = Ref.ref,
     computed = Computed.computed,
     reactive = reactive,
-    reactiveCall = ReactiveCall.reactiveCall,
-    new = ReactiveCall.reactiveCall,
+    new = apiNew.new,
     use = use
 }
+
 return vlua

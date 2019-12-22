@@ -4,7 +4,7 @@ local lu = require("test.luaunit")
 local vlua = require("vlua.vlua")
 
 describe(
-    "reactiveCall sync",
+    "new sync",
     function()
         ---@type reactiveCallData
         local data
@@ -31,7 +31,7 @@ describe(
             function()
                 local print = lu.createSpy("print")
 
-                local context = vlua.reactiveCall(
+                local context = vlua.new(
                     function()
                         print(data.a, data.c, data.b.d)
                     end
@@ -58,17 +58,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveCall(
+                    vlua.new(
                     function()
                         print(data.a)
 
-                        vlua.reactiveCall(
+                        vlua.new(
                             function()
                                 print(data.c)
                             end
                         )
 
-                        vlua.reactiveCall(
+                        vlua.new(
                             function()
                                 print(data.b.d)
                             end
@@ -99,17 +99,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveCall(
+                    vlua.new(
                     function()
                         print(data.a)
 
-                        vlua.reactiveCall(
+                        vlua.new(
                             function()
                                 print(data.c)
-                                vlua.reactiveCall(
+                                vlua.new(
                                     function()
                                         print(data.b.d)
-                                        vlua.reactiveCall(
+                                        vlua.new(
                                             function()
                                                 print(data.b.d)
                                             end
@@ -142,7 +142,7 @@ describe(
 )
 
 describe(
-    "reactiveCall async",
+    "new async",
     function()
         ---@type reactiveCallData
         local data
@@ -169,7 +169,7 @@ describe(
             function()
                 local print = lu.createSpy("print")
 
-                vlua.reactiveCall(
+                vlua.new(
                     function()
                         print(data.a, data.c, data.b.d)
                     end
@@ -203,17 +203,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveCall(
+                    vlua.new(
                     function()
                         print(data.a)
 
-                        vlua.reactiveCall(
+                        vlua.new(
                             function()
                                 print(data.c)
                             end
                         )
 
-                        vlua.reactiveCall(
+                        vlua.new(
                             function()
                                 print(data.b.d)
                             end
@@ -256,17 +256,17 @@ describe(
                 local print = lu.createSpy("print")
 
                 local content =
-                    vlua.reactiveCall(
+                    vlua.new(
                     function()
                         print(data.a)
 
-                        vlua.reactiveCall(
+                        vlua.new(
                             function()
                                 print(data.c)
-                                vlua.reactiveCall(
+                                vlua.new(
                                     function()
                                         print(data.b.d)
-                                        vlua.reactiveCall(
+                                        vlua.new(
                                             function()
                                                 print(data.b.d)
                                             end

@@ -45,6 +45,9 @@ local sortSub = function(a, b)
     return a.id < b.id
 end
 function Dep:notify()
+    if #self.subs == 0 then
+        return
+    end
     -- stabilize the subscriber list first
     local subs = slice(self.subs)
     if (config.env ~= "production" and not config.async) then

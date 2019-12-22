@@ -1,7 +1,7 @@
 # vue.lua
 vue for lua
 # 尚在开发中
-* 这个库用来提供给游戏lua中使用类似于vue.js 3.0的渐进式框架，设计上可以适用于任何游戏引擎(unity / ue4 / cocos2d-x 等等）或UI库，跟vue.js 3.0的核心思想一样。
+* 这个库用来提供给游戏lua中使用类似于vue.js 3.0的渐进式框架，设计上可以适用于任何游戏引擎(unity / ue4 / cocos2d-x 等等）或UI库，跟[vue.js 3.0][https://zhuanlan.zhihu.com/p/68477600]的核心思想一样，基于函数式编程思想。
 
 * 因为游戏中渲染机制跟web渲染机制完全不一样，不打算支持template机制。
 

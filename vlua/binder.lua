@@ -111,5 +111,4 @@ function Binder:watch(expOrFn, cb, immediacy)
         cb(self.source, watcher.value, watcher.value)
     end
 end
-
 return Binder

@@ -5,6 +5,12 @@ vue for lua
 
 * 因为游戏中渲染机制跟web渲染机制完全不一样，不打算支持template机制。
 
+* 编写了一些示例：
+1. [example_01](examples/example_01.lua): 展示基础的可响应数据用法
+2. [example_02](examples/example_02.lua): 展示基础的可响应函数用法
+
+
+
 * 通过插件形式提供各个游戏引擎的专属支持，各引擎实现在plugins目录中，同时fork各引擎并编写一些示例：
 1. [xlua](https://github.com/vlua/vlua.xLua)
 

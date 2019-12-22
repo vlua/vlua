@@ -29,6 +29,7 @@ Generic.install = function()
                 binder:teardown()
             end
         )
+        return binder
     end
 
     function vlua.onMounted(cb)

@@ -8,6 +8,7 @@ local Binder = Util.class("Binder")
 function Binder:ctor(source, parent)
     self.source = source
     self.parent = parent
+    self.watchers = {}
 end
 
 function Binder:teardown()

@@ -3,7 +3,7 @@ local Util = require("vlua.util")
 local CallContext = require("vlua.callContext")
 local warn = Util.warn
 local debug = debug
-local pcall = pcall
+local pcall, xpcall = pcall, xpcall
 local HookIds = CallContext.HookIds
 local pushContext, popContext = CallContext.pushContext, CallContext.popContext
 
@@ -15,13 +15,15 @@ local function reactiveCall(fn)
     local reactiveFn = function()
         context:emit(HookIds.unmount)
         pushContext(context)
-        local status, value = pcall(fn)
+        local value =
+            xpcall(
+            fn,
+            function(msg)
+                warn("error when reactiveCall:" .. msg .. " stack :" .. debug.traceback())
+                context:emit(HookIds.errorCaptured, msg)
+            end
+        )
         popContext()
-        if not status then
-            warn("error when reactiveCall:" .. value .. " stack :" .. debug.traceback())
-            context:emit(HookIds.errorCaptured, value)
-            value = nil
-        end
         context:emit(HookIds.mounted, value)
     end
     -- watch and run one time

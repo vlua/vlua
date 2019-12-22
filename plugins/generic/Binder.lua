@@ -1,10 +1,10 @@
-local Lang = require("util.Lang")
-local Watcher = require("observer.Watcher")
+local Util = require("util.util")
+local Watcher = require("vlua.watcher")
 local pairs = pairs
 
 ---@class Binder
 ---@field watchers Watcher[]
-local Binder = Lang.class("Binder")
+local Binder = Util.class("Binder")
 function Binder:ctor(source, parent)
     self.source = source
     self.parent = parent

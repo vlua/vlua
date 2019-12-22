@@ -92,7 +92,7 @@ function waitForUpdate()
 end
 
 local function mainLoop()
-    local flushCallbacks = require("util.NextTick").flushCallbacks
+    local flushCallbacks = require("vlua.nextTick").flushCallbacks
     while (not exit) do
         flushCallbacks()
         local cos = updaters
@@ -217,13 +217,11 @@ function lu.createSpyObj(name, fields)
     return spy
 end
 
-require("test.unit.modules.observer.TestDep")
-require("test.unit.modules.observer.TestWatcher")
-require("test.unit.modules.observer.TestObserver")
+require("test.TestDep")
+require("test.TestWatcher")
+require("test.TestObserver")
 
-require("test.unit.features.instance.TestInit")
-require("test.unit.features.instance.methods-data")
-require("test.unit.features.instance.methods-events")
+require("test.TestInit")
 require("test.reactiveEval_spec")
 require("test.computed_spec")
 

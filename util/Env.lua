@@ -1,4 +1,0 @@
-return {
-    nativeWatch = {},
-    hasSymbol = false
-}

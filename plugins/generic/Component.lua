@@ -1,7 +1,7 @@
-local Lang = require("util.Lang")
+local Util = require("util.util")
 local vlua = require("vlua")
 
-local Component = Lang.class("Component")
+local Component = Util.class("Component")
 
 function Component:setup(...)
     local args = {...}

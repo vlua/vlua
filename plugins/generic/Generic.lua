@@ -1,7 +1,7 @@
 local vlua = require("vlua")
-local Watcher = require("observer.Watcher")
-local CallContext = require("observer.CallContext")
-local Binder = require("plugins.generic.Binder")
+local Watcher = require("vlua.watcher")
+local CallContext = require("vlua.callContext")
+local Binder = require("plugins.generic.binder")
 local HookIds = CallContext.HookIds
 local tinsert = table.insert
 

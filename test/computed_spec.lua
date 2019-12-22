@@ -1,7 +1,7 @@
-local config = require("config")
+local config = require("vlua.config")
 local lu = require("luaunit")
+local vlua = require("vlua.vlua")
 
-local vlua = require("vlua")
 
 describe(
     "computed sync",

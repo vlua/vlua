@@ -1,7 +1,9 @@
 local Util = require("vlua.util")
 local Watcher = require('vlua.watcher')
-local tinsert, tpop = table.insert, table.remove
 local pairs = pairs
+local warn = Util.warn
+local xpcall = xpcall
+local tinsert, tpop = table.insert, table.remove
 
 ---@class Binder
 ---@field children Binder[]
@@ -25,18 +27,18 @@ Binder.HookIds = HookIds
 -- This is globally unique because only one watcher
 -- can be evaluated at a time.
 ---@type Binder
-Binder.target = nil
+local target = nil
 local targetStack = {}
 
 ---@param context Binder
-function Binder.pushContext(context)
+local function pushContext(context)
     tinsert(targetStack, context)
-    Binder.target = context
+    target = context
 end
 
-function Binder.popContext()
+local function popContext()
     tpop(targetStack)
-    Binder.target = targetStack[#targetStack]
+    target = targetStack[#targetStack]
 end
 
 function Binder:emit(event, ...)
@@ -82,19 +84,66 @@ end
 
 function Binder:createChild(source)
     local child = Binder.new(source, self)
-    self:autoTeardown(function()
+    self:onUnmount(function()
         child:teardown()
     end)
     return child
 end
 
-function Binder:autoTeardown(teardownFn)
-    self:once(
-        HookIds.unmount,
+--- create a reactive function
+---@param fn fun():nil
+function Binder:newFunction(fn)
+    -- a content hold my watches and all children
+    ---@type Binder
+    local binder = self and self:createChild() or Binder.new()
+
+    local reactiveFn = function()
+        binder:emit(HookIds.unmount)
+        pushContext(binder)
+        local value =
+            xpcall(
+            fn,
+            function(msg)
+                warn("error when new:" .. msg .. " stack :" .. debug.traceback())
+                binder:emit(HookIds.errorCaptured, msg)
+            end,
+            binder
+        )
+        popContext(binder)
+        binder:emit(HookIds.mounted, value)
+    end
+    -- watch and run one time
+    local watcher = Watcher.new(nil, reactiveFn)
+    -- only teardown when destory, but not unmount
+    binder:once(
+        HookIds.destroy,
         function()
-            teardownFn()
+            watcher:teardown()
         end
     )
+    return binder
+end
+
+--- create a reactive function
+---@param fn fun():nil
+function Binder.apiNew(fn)
+    return Binder.newFunction(target, fn)
+end
+
+function Binder:onMounted(cb)
+    self:on(HookIds.mounted, cb)
+end
+
+function Binder:onUnmount(cb)
+    self:on(HookIds.unmount, cb)
+end
+
+function Binder:onDestroy(cb)
+    self:on(HookIds.destroy, cb)
+end
+
+function Binder:onErrorCaptured(cb)
+    self:on(HookIds.errorCaptured, cb)
 end
 
 --- call cb when expr changed
@@ -104,7 +153,7 @@ end
 function Binder:watch(expOrFn, cb, immediacy)
     -- watch and run one time
     local watcher = Watcher.new(self.source, expOrFn, cb)
-    self:autoTeardown(function()
+    self:onUnmount(function()
         watcher:teardown()
     end)
     if immediacy then

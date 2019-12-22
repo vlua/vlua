@@ -7,7 +7,7 @@ ui.install = function()
     ---@param cb Function
     function Binder:bindUIEvent(event, cb)
         event:AddListener(cb)
-        self:autoTeardown(
+        self:onUnmount(
             function()
                 event:RemoveListener(cb)
             end

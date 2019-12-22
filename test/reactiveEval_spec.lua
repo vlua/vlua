@@ -78,11 +78,14 @@ describe(
 
                 print.allWith({{1}, {"c"}, {4}})
 
-                data.a = 2
-                print.allWith({{2}, {"c"}, {4}})
-
                 data.c = "e"
                 print.allWith({{"e"}})
+
+                data.a = 2
+                print.allWith({{2}, {"e"}, {4}})
+
+                data.c = "a"
+                print.allWith({{"a"}})
 
                 data.b.d = 9
                 data.c = "f"

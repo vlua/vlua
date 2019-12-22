@@ -41,13 +41,13 @@ function describe(name, fn)
     testunit.run = function()
         testunit.beforeAll()
         for i, v in ipairs(testunit.children) do
-            print(string.rep("    ", indent) .. "begin describe ", i , v.name)
+            print(string.rep("    ", indent) .. "begin describe ", i, v.name)
             indent = indent + 1
             testunit.beforeEach()
             v.run()
             testunit.afterEach()
             indent = indent - 1
-            print(string.rep("    ", indent) .. "end describe ", i , v.name)
+            print(string.rep("    ", indent) .. "end describe ", i, v.name)
         end
         testunit.afterAll()
     end
@@ -131,12 +131,12 @@ function lu.createSpy(name)
     function spy.toHaveBeenCalledWith(...)
         checkCall(#spy.calls, ...)
     end
-    
+
     function spy.clear()
         spy.calls = {}
     end
     function spy.allWith(calls, err)
-        lu.assertEquals(#calls == #spy.calls , true, tostring(err) .. ' not call ' .. #calls .. ' except ' .. #spy.calls)
+        lu.assertEquals(#calls == #spy.calls, true, tostring(err) .. " not call " .. #calls .. " except " .. #spy.calls)
         for i = 1, #calls do
             checkCall(i, table.unpack(calls[i]))
         end
@@ -167,7 +167,7 @@ function lu.spyOn(target, name)
         spycall(...)
         return call(...)
     end
-    spy.__call = function(_,...)
+    spy.__call = function(_, ...)
         spy.call(...)
     end
     target[name] = spy.call
@@ -216,7 +216,6 @@ function lu.createSpyObj(name, fields)
     end
     return spy
 end
-
 
 return function(run)
     run()

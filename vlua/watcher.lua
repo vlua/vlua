@@ -81,6 +81,9 @@ function Watcher:ctor(source, expOrFn, cb, options)
     end
     self.cb = cb
     uid = uid + 1
+    if uid == 17 or uid == 19 then
+        print('')
+    end
     self.id = uid -- uid for batching
     self.active = true
     self.dirty = self.lazy -- for lazy watchers

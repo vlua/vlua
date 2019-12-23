@@ -56,7 +56,8 @@ local function flushSchedulerQueue()
 
     -- do not cache length because more watchers might be pushed
     -- as we run existing watchers
-    for index = 1, #queue do
+    index = 1
+    while index <= #queue do
         watcher = queue[index]
         if (watcher.before) then
             watcher:before()
@@ -69,7 +70,7 @@ local function flushSchedulerQueue()
             circular[id] = (circular[id] or 0) + 1
             if (circular[id] > MAX_UPDATE_COUNT) then
                 warn(
-                    "You may have an infinite update loop " +
+                    "You may have an infinite update loop " ..
                         (watcher.user and 'in watcher with expression "${watcher.expression}"' or
                             "in a component render function."),
                     watcher.vm
@@ -77,6 +78,7 @@ local function flushSchedulerQueue()
                 break
             end
         end
+        index = index + 1
     end
 
     resetSchedulerState()
@@ -103,7 +105,7 @@ local function queueWatcher(watcher)
         else
             -- if already flushing, splice the watcher based on its id
             -- if already past its id, it will be run next immediately.
-            local i = queue.length - 1
+            local i = #queue
             while (i > index and queue[i].id > watcher.id) do
                 i = i - 1
             end

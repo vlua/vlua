@@ -1158,6 +1158,12 @@ Observer.set = set
 Observer.del = del
 Observer.defineReactive = defineReactive
 Observer.observe = observe
+
+Observer.reactive = function(value)
+    observe(value)
+    return value
+end
+
 Observer.shouldObserve = shouldObserve
 
 return Observer

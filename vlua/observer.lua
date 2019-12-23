@@ -138,10 +138,13 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         end
         childOb = not shallow and observe(newVal)
         val = newVal
-        dep:notify()
         --- delete notify
         if newVal == nil then
+            mt.__properties[key] = nil
+            dep:notify()
             ownerOb.dep:notify()
+        else
+            dep:notify()
         end
     end
 end
@@ -272,5 +275,10 @@ Observer.del = del
 Observer.defineReactive = defineReactive
 Observer.observe = observe
 Observer.shouldObserve = shouldObserve
+
+Observer.reactive = function(value)
+    observe(value)
+    return value
+end
 
 return Observer

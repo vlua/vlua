@@ -31,7 +31,7 @@ ui.install = function()
         end, true)
         -- one way to source
         self:bindUIEvent(inputField.onValueChanged, function(text)
-            self.source[exp] = text
+            self.setSource(exp, text)
         end)
     end
 end

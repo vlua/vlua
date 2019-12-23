@@ -8,3 +8,6 @@ require('test.unittest')(function()
     require("test.computed_spec")
     require("test.scheduler_spec")
 end)
+
+require('examples.example_01')
+require('examples.example_02')

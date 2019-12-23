@@ -17,6 +17,12 @@ describe(
             function()
                 config.async = true
                 spyObj, spy = lu.createSpy("scheduler")
+            end
+        )
+
+        afterEach(
+            function()
+                config.async = false
                 lu.clearWarn()
             end
         )

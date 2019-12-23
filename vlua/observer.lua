@@ -2,7 +2,6 @@ local config = require("vlua.config")
 local Dep = require("vlua.dep")
 local Util = require("vlua.util")
 local Computed = require("vlua.apiComputed")
-local isComputed = Computed.isComputed
 local pairs = pairs
 local ipairs = ipairs
 local next = next
@@ -12,8 +11,7 @@ local rawset = rawset
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local class = Util.class
-local createPlainObjectMetatable, PlainObject = Util.createPlainObjectMetatable, Util.PlainObject
-local instanceof = Util.instanceof
+local createPlainObjectMetatable, isRef = Util.createPlainObjectMetatable, Util.isRef
 local isObject = function(v)
     return type(v) == "table"
 end
@@ -102,12 +100,9 @@ local function defineReactive(obj, key, val, customSetter, shallow, mt)
         val = Computed.computed(val)
     end
 
-    -- support computed
-    if isComputed(val) then
-        mt.__properties[key] = {
-            val.getter,
-            val.setter
-        }
+    -- support computed and ref
+    if isRef(val) then
+        mt.__properties[key] = val
         return
     end
 

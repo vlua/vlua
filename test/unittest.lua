@@ -119,12 +119,13 @@ function lu.createSpy(name)
     end
 
     local function checkCall(idx, ...)
+        local count = select('#', ...)
         local args = {...}
         lu.assertEquals(idx <= #spy.calls and idx > 0, true, "not called with name:" .. name)
         local callArgs = spy.calls[idx]
         lu.assertEquals(#args, #callArgs, "arg count not match with name:" .. name)
-        for i, v in ipairs(args) do
-            lu.assertEquals(v, callArgs[i], "arg not match with name:" .. name .. " arg :" .. i)
+        for i = 1, count do
+            lu.assertEquals(args[i], callArgs[i], "arg not match with name:" .. name .. " arg :" .. i)
         end
     end
 

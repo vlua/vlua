@@ -8,6 +8,7 @@ local tostring = tostring
 local tremove = table.remove
 local tinsert = table.insert
 local min = math.min
+local type = type
 
 local emptyObject = {}
 
@@ -597,6 +598,10 @@ local function instanceof(obj, cls)
     return false
 end
 
+local function isRef(val)
+    return type(val) == "table" and val.__isref == true
+end
+
 return {
     emptyObject = emptyObject,
     isUndef = isUndef,
@@ -646,5 +651,6 @@ return {
     slice = slice,
     splice = splice,
     isReserved = isReserved,
-    instanceof = instanceof
+    instanceof = instanceof,
+    isRef = isRef
 }

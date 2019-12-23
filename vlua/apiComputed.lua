@@ -4,6 +4,9 @@ local warn = Util.warn
 local setmetatable = setmetatable
 local type = type
 
+
+local V_GETTER = 1
+local V_SETTER = 2
 ---@class Computed
 ---@field value any
 ---@field get fun():any
@@ -42,11 +45,11 @@ local function computed(getter, setter)
     local RefMetatable = {
         __index = function(self, key)
             assert(key == "value", 'only access Computed getter with "value" key')
-            return computedGetter(self)
+            return computedGetter(nil)
         end,
         __newindex = function(self, key, newValue)
             assert(key == "value", 'only access Computed setter with "value" key')
-            computedSetter(self, newValue)
+            computedSetter(nil, newValue)
         end
     }
     local obj = {
@@ -56,19 +59,14 @@ local function computed(getter, setter)
         set = function(newValue)
             computedSetter(nil, newValue)
         end,
-        getter = computedGetter,
-        setter = computedSetter,
-        __iscomputed = true
+        [V_GETTER] = computedGetter,
+        [V_SETTER] = computedSetter,
+        __isref = true
     }
     setmetatable(obj, RefMetatable)
     return obj
 end
 
-local function isComputed(val)
-    return type(val) == "table" and val.__iscomputed == true
-end
-
 return {
-    computed = computed,
-    isComputed = isComputed
+    computed = computed
 }

@@ -20,6 +20,7 @@ local vlua = {
     computed = Computed.computed,
     reactive = Observer.reactive,
     new = Binder.apiNew,
+    newBinder = Binder.apiNewBinder,
     use = use,
     createBinder = createBinder
 }

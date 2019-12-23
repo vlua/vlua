@@ -2,7 +2,6 @@ local config = require("vlua.config")
 local lu = require("test.luaunit")
 local vlua = require("vlua.vlua")
 
-
 describe(
     "computed sync",
     function()
@@ -110,7 +109,6 @@ describe(
         it(
             "computed function",
             function()
-                
                 local get = lu.createSpy("get")
                 local data = {
                     idAddOne = function(self)
@@ -121,15 +119,14 @@ describe(
                 }
                 vlua.reactive(data)
 
-                lu.assertEquals(data.id , 1)
-                lu.assertEquals(data.idAddOne , 2)
+                lu.assertEquals(data.id, 1)
+                lu.assertEquals(data.idAddOne, 2)
                 get.allWith({{data}}, "self is data")
-                
+
                 data.id = 2
-                lu.assertEquals(data.id , 2)
-                lu.assertEquals(data.idAddOne , 3)
+                lu.assertEquals(data.id, 2)
+                lu.assertEquals(data.idAddOne, 3)
                 get.allWith({{data}}, "self is data")
-                
             end
         )
     end

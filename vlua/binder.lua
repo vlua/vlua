@@ -1,7 +1,7 @@
 local Util = require("vlua.util")
-local Watcher = require('vlua.watcher')
+local Watcher = require("vlua.watcher")
 local pairs = pairs
-local warn = Util.warn
+local warn, isRef = Util.warn, Util.isRef
 local xpcall = xpcall
 local tinsert, tpop = table.insert, table.remove
 
@@ -19,7 +19,7 @@ local HookIds = {
     mounted = 1,
     unmount = 2,
     destroy = 3,
-    errorCaptured = 4,
+    errorCaptured = 4
 }
 Binder.HookIds = HookIds
 
@@ -81,13 +81,23 @@ function Binder:teardown()
     self:emit(HookIds.destroy)
 end
 
-
 function Binder:createChild(source)
     local child = Binder.new(source, self)
-    self:onUnmount(function()
-        child:teardown()
-    end)
+    self:onUnmount(
+        function()
+            child:teardown()
+        end
+    )
     return child
+end
+
+
+function Binder.apiNewBinder(source)
+    if target then
+        return target:createChild(source)
+    else
+        return Binder.new(source)
+    end
 end
 
 --- create a reactive function
@@ -147,15 +157,24 @@ function Binder:onErrorCaptured(cb)
 end
 
 --- call cb when expr changed
----@param expOrFn string | Function
+---@param expOrFn string | Function | Ref | Computed
 ---@param cb Function
 ---@param immediacy boolean @call cb when start
 function Binder:watch(expOrFn, cb, immediacy)
+    -- support to watch ref or computed value
+    if isRef(expOrFn) then
+        local ref = expOrFn
+        expOrFn = function()
+            return ref.value
+        end
+    end
     -- watch and run one time
     local watcher = Watcher.new(self.source, expOrFn, cb)
-    self:onUnmount(function()
-        watcher:teardown()
-    end)
+    self:onUnmount(
+        function()
+            watcher:teardown()
+        end
+    )
     if immediacy then
         cb(self.source, watcher.value, watcher.value)
     end

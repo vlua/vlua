@@ -235,6 +235,29 @@ describe(
             end
         )
 
+        it(
+            "watch ref",
+            function()
+                local data = vlua.ref(1)
+                local binder = vlua.newBinder()
+                binder:watch(data, spy)
+                data.value = 2
+                spy.toHaveBeenCalledWith(nil, 2, 1)
+            end
+        )
+
+        it(
+            "watch computed",
+            function()
+                local r = vlua.ref(1)
+                local data = vlua.computed(function()return r.value end)
+                local binder = vlua.newBinder()
+                binder:watch(data, spy)
+                r.value = 2
+                spy.toHaveBeenCalledWith(nil, 2, 1)
+            end
+        )
+
         -- it(
         --     "warn not support path",
         --     function()

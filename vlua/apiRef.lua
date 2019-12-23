@@ -4,6 +4,8 @@ local warn = Util.warn
 local setmetatable = setmetatable
 local type = type
 
+local V_GETTER = 1
+local V_SETTER = 2
 ---@class Ref
 ---@field value any
 ---@field get fun():any
@@ -52,19 +54,14 @@ local function ref(value, isReadonly)
     local obj = {
         get = get,
         set = set,
-        getter = get,
-        setter = selfSet,
+        [V_GETTER] = get,
+        [V_SETTER] = selfSet,
         __isref = true
     }
     setmetatable(obj, RefMetatable)
     return obj
 end
 
-local function isRef(val)
-    return type(val) == "table" and val.__isref == true
-end
-
 return {
-    ref = ref,
-    isRef = isRef
+    ref = ref
 }

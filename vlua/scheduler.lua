@@ -5,7 +5,7 @@ local nextTick, devtools = NextTick.nextTick, Util.devtools
 local splice = Util.splice
 local tsort = table.sort
 local tinsert = table.insert
-local warn = print
+local warn = Util.warn
 
 local MAX_UPDATE_COUNT = 100
 
@@ -125,5 +125,6 @@ local function queueWatcher(watcher)
 end
 
 return {
-    queueWatcher = queueWatcher
+    queueWatcher = queueWatcher,
+    MAX_UPDATE_COUNT = MAX_UPDATE_COUNT
 }

@@ -1,6 +1,21 @@
 package.path = package.path .. ";luaexe/?.lua"
 require("LuaPanda").start("127.0.0.1", 8818)
 local lu = require("test.luaunit")
+local util = require('vlua.util')
+
+local warnMsg
+local warn = util.warn
+util.warn = function(msg,...)
+    warnMsg = msg
+    warn(msg, ...)
+end
+function lu.clearWarn()
+    warnMsg = nil
+end
+function lu.toHaveBeenWarned(msg)
+    lu.assertStrContains(warnMsg, msg)
+    warnMsg = nil
+end
 
 local function noop()
 end
@@ -156,7 +171,7 @@ function lu.createSpy(name)
     end
 
     setmetatable(spy, spy)
-    return spy
+    return spy, spy.call
 end
 
 function lu.spyOn(target, name)
@@ -172,7 +187,7 @@ function lu.spyOn(target, name)
         spy.call(...)
     end
     target[name] = spy.call
-    return spy
+    return spy, spy.call
 end
 
 function lu.createSpyObj(name, fields)

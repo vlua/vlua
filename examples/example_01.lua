@@ -11,7 +11,7 @@ local data = vlua.reactive({
 })
 
 -- 创建用来绑定函数的绑定器
-local binder = vlua.createBinder(data)
+local binder = vlua.newBinder(data)
 
 print(string.format("fullname : %s" , data.fullName))
 -- 绑定一个字段与函数回调

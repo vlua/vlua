@@ -6,7 +6,7 @@ local Component = Util.class("Component")
 function Component:setup(...)
     local args = {...}
     vlua.new(function()
-        local binder = vlua.createBinder(self)
+        local binder = vlua.newBinder(self)
         self:onSetup(binder, table.unpack(args))
     end)
 end

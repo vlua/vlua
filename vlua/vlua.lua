@@ -10,10 +10,6 @@ local function use(plugin)
     plugin.install()
 end
 
-local function createBinder(source, parent)
-    return Binder.new(source, parent)
-end
-
 ---@class vlua
 local vlua = {
     ref = Ref.ref,
@@ -22,7 +18,6 @@ local vlua = {
     new = Binder.apiNew,
     newBinder = Binder.apiNewBinder,
     use = use,
-    createBinder = createBinder
 }
 
 

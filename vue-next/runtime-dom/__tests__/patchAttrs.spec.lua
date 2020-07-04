@@ -1,0 +1,38 @@
+require("runtime-dom/src/patchProp")
+require("runtime-dom/src/modules/attrs")
+
+describe('runtime-dom: attrs patching', function()
+  test('xlink attributes', function()
+    local el = document:createElementNS('http://www.w3.org/2000/svg', 'use')
+    patchProp(el, 'xlink:href', nil, 'a', true)
+    expect(el:getAttributeNS(xlinkNS, 'href')):toBe('a')
+    patchProp(el, 'xlink:href', 'a', nil, true)
+    expect(el:getAttributeNS(xlinkNS, 'href')):toBe(nil)
+  end
+  )
+  test('boolean attributes', function()
+    local el = document:createElement('input')
+    patchProp(el, 'readonly', nil, true)
+    expect(el:getAttribute('readonly')):toBe('')
+    patchProp(el, 'readonly', true, false)
+    expect(el:getAttribute('readonly')):toBe(nil)
+  end
+  )
+  test('attributes', function()
+    local el = document:createElement('div')
+    patchProp(el, 'foo', nil, 'a')
+    expect(el:getAttribute('foo')):toBe('a')
+    patchProp(el, 'foo', 'a', nil)
+    expect(el:getAttribute('foo')):toBe(nil)
+  end
+  )
+  test('onxxx but non-listener attributes', function()
+    local el = document:createElement('div')
+    patchProp(el, 'onwards', nil, 'a')
+    expect(el:getAttribute('onwards')):toBe('a')
+    patchProp(el, 'onwards', 'a', nil)
+    expect(el:getAttribute('onwards')):toBe(nil)
+  end
+  )
+end
+)

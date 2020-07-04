@@ -1,0 +1,17 @@
+require("compiler-core/src/errors/ErrorCodes")
+
+function defaultOnError(error)
+  error(error)
+end
+
+function createCompilerError(code, loc, messages, additionalMessage)
+  -- [ts2lua](messages or errorMessages)下标访问可能不正确
+  -- [ts2lua]lua中0和空字符串也是true，此处__DEV__ or not __BROWSER__需要确认
+  local msg = (__DEV__ or not __BROWSER__ and {(messages or errorMessages)[code] + additionalMessage or } or {code})[1]
+  local error = SyntaxError(String(msg))
+  error.code = code
+  error.loc = loc
+  return error
+end
+
+local errorMessages = {ErrorCodes.ABRUPT_CLOSING_OF_EMPTY_COMMENT='Illegal comment.', ErrorCodes.CDATA_IN_HTML_CONTENT='CDATA section is allowed only in XML context.', ErrorCodes.DUPLICATE_ATTRIBUTE='Duplicate attribute.', ErrorCodes.END_TAG_WITH_ATTRIBUTES='End tag cannot have attributes.', ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS="Illegal '/' in tags.", ErrorCodes.EOF_BEFORE_TAG_NAME='Unexpected EOF in tag.', ErrorCodes.EOF_IN_CDATA='Unexpected EOF in CDATA section.', ErrorCodes.EOF_IN_COMMENT='Unexpected EOF in comment.', ErrorCodes.EOF_IN_SCRIPT_HTML_COMMENT_LIKE_TEXT='Unexpected EOF in script.', ErrorCodes.EOF_IN_TAG='Unexpected EOF in tag.', ErrorCodes.INCORRECTLY_CLOSED_COMMENT='Incorrectly closed comment.', ErrorCodes.INCORRECTLY_OPENED_COMMENT='Incorrectly opened comment.', ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME="Illegal tag name. Use '&lt;' to print '<'.", ErrorCodes.MISSING_ATTRIBUTE_VALUE='Attribute value was expected.', ErrorCodes.MISSING_END_TAG_NAME='End tag name was expected.', ErrorCodes.MISSING_WHITESPACE_BETWEEN_ATTRIBUTES='Whitespace was expected.', ErrorCodes.NESTED_COMMENT="Unexpected '<!--' in comment.", ErrorCodes.UNEXPECTED_CHARACTER_IN_ATTRIBUTE_NAME='Attribute name cannot contain U+0022 ("), U+0027 (\'), and U+003C (<).', ErrorCodes.UNEXPECTED_CHARACTER_IN_UNQUOTED_ATTRIBUTE_VALUE='Unquoted attribute value cannot contain U+0022 ("), U+0027 (\'), U+003C (<), U+003D (=), and U+0060 (`).', ErrorCodes.UNEXPECTED_EQUALS_SIGN_BEFORE_ATTRIBUTE_NAME="Attribute name cannot start with '='.", ErrorCodes.UNEXPECTED_QUESTION_MARK_INSTEAD_OF_TAG_NAME="'<?' is allowed only in XML context.", ErrorCodes.UNEXPECTED_SOLIDUS_IN_TAG="Illegal '/' in tags.", ErrorCodes.X_INVALID_END_TAG='Invalid end tag.', ErrorCodes.X_MISSING_END_TAG='Element is missing end tag.', ErrorCodes.X_MISSING_INTERPOLATION_END='Interpolation end sign was not found.', ErrorCodes.X_MISSING_DYNAMIC_DIRECTIVE_ARGUMENT_END='End bracket for dynamic directive argument was not found. ' .. 'Note that dynamic directive argument cannot contain spaces.', ErrorCodes.X_V_IF_NO_EXPRESSION=, ErrorCodes.X_V_ELSE_NO_ADJACENT_IF=, ErrorCodes.X_V_FOR_NO_EXPRESSION=, ErrorCodes.X_V_FOR_MALFORMED_EXPRESSION=, ErrorCodes.X_V_BIND_NO_EXPRESSION=, ErrorCodes.X_V_ON_NO_EXPRESSION=, ErrorCodes.X_V_SLOT_UNEXPECTED_DIRECTIVE_ON_SLOT_OUTLET=, ErrorCodes.X_V_SLOT_MIXED_SLOT_USAGE= +  + , ErrorCodes.X_V_SLOT_DUPLICATE_SLOT_NAMES=, ErrorCodes.X_V_SLOT_EXTRANEOUS_DEFAULT_SLOT_CHILDREN= + , ErrorCodes.X_V_SLOT_MISPLACED=, ErrorCodes.X_V_MODEL_NO_EXPRESSION=, ErrorCodes.X_V_MODEL_MALFORMED_EXPRESSION=, ErrorCodes.X_V_MODEL_ON_SCOPE_VARIABLE=, ErrorCodes.X_INVALID_EXPRESSION=, ErrorCodes.X_KEEP_ALIVE_INVALID_CHILDREN=, ErrorCodes.X_PREFIX_ID_NOT_SUPPORTED=, ErrorCodes.X_MODULE_MODE_NOT_SUPPORTED=, ErrorCodes.X_CACHE_HANDLER_NOT_SUPPORTED=, ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED=}

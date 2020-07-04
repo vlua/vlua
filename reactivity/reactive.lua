@@ -62,7 +62,7 @@ createRefWrapper = function(properties, key, value)
             -- 引用覆盖
             if isRef(newVal) then
                 createRefWrapper(properties, key, newVal)
-                triggerRef(value)
+                trigger(value, TriggerOpTypes.SET, "value", newVal[V_GETTER](self), value[V_GETTER](self))
                 return
             end
             setter(self, newVal)
@@ -109,15 +109,15 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
             if newVal == val then
                 return
             end
-            newVal = shallow and newVal or createReactiveObject(newVal, isReadonly, shallow)
-
             local oldValue = val
 
             -- 对于新的Ref要处理
             if isRef(newVal) then
                 createRefWrapper(properties, key, newVal)
-                trigger(target, TriggerOpTypes.SET, key, newVal, oldValue)
+                trigger(target, TriggerOpTypes.SET, key, newVal[V_GETTER](self), oldValue)
                 return
+            else
+                newVal = shallow and newVal or createReactiveObject(newVal, isReadonly, shallow)
             end
 
             val = newVal

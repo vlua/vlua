@@ -9,9 +9,9 @@ describe('reactivity/computed', function()
       value.foo
     end
     )
-    expect(cValue.value):toBe(undefined)
+    lu.assertEquals(cValue.value, undefined)
     value.foo = 1
-    expect(cValue.value):toBe(1)
+    lu.assertEquals(cValue.value, 1)
   end
   )
   it('should compute lazily', function()
@@ -22,12 +22,12 @@ describe('reactivity/computed', function()
     )
     local cValue = computed(getter)
     expect(getter).tsvar_not:toHaveBeenCalled()
-    expect(cValue.value):toBe(undefined)
+    lu.assertEquals(cValue.value, undefined)
     expect(getter):toHaveBeenCalledTimes(1)
     expect(getter):toHaveBeenCalledTimes(1)
     value.foo = 1
     expect(getter):toHaveBeenCalledTimes(1)
-    expect(cValue.value):toBe(1)
+    lu.assertEquals(cValue.value, 1)
     expect(getter):toHaveBeenCalledTimes(2)
     expect(getter):toHaveBeenCalledTimes(2)
   end
@@ -43,9 +43,9 @@ describe('reactivity/computed', function()
       dummy = cValue.value
     end
     )
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, undefined)
     value.foo = 1
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
   end
   )
   it('should work when chained', function()
@@ -58,11 +58,11 @@ describe('reactivity/computed', function()
       c1.value + 1
     end
     )
-    expect(c2.value):toBe(1)
-    expect(c1.value):toBe(0)
+    lu.assertEquals(c2.value, 1)
+    lu.assertEquals(c1.value, 0)
     value.foo=value.foo+1
-    expect(c2.value):toBe(2)
-    expect(c1.value):toBe(1)
+    lu.assertEquals(c2.value, 2)
+    lu.assertEquals(c1.value, 1)
   end
   )
   it('should trigger effect when chained', function()
@@ -82,11 +82,11 @@ describe('reactivity/computed', function()
       dummy = c2.value
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     expect(getter1):toHaveBeenCalledTimes(1)
     expect(getter2):toHaveBeenCalledTimes(1)
     value.foo=value.foo+1
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
     expect(getter1):toHaveBeenCalledTimes(2)
     expect(getter2):toHaveBeenCalledTimes(2)
   end
@@ -108,11 +108,11 @@ describe('reactivity/computed', function()
       dummy = c1.value + c2.value
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     expect(getter1):toHaveBeenCalledTimes(1)
     expect(getter2):toHaveBeenCalledTimes(1)
     value.foo=value.foo+1
-    expect(dummy):toBe(3)
+    lu.assertEquals(dummy, 3)
     expect(getter1):toHaveBeenCalledTimes(2)
     expect(getter2):toHaveBeenCalledTimes(2)
   end
@@ -128,12 +128,12 @@ describe('reactivity/computed', function()
       dummy = cValue.value
     end
     )
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, undefined)
     value.foo = 1
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     stop(cValue.effect)
     value.foo = 2
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
   end
   )
   it('should support setter', function()
@@ -145,11 +145,11 @@ describe('reactivity/computed', function()
       n.value = val - 1
     end
     })
-    expect(plusOne.value):toBe(2)
+    lu.assertEquals(plusOne.value, 2)
     n.value=n.value+1
-    expect(plusOne.value):toBe(3)
+    lu.assertEquals(plusOne.value, 3)
     plusOne.value = 0
-    expect(n.value):toBe(-1)
+    lu.assertEquals(n.value, -1)
   end
   )
   it('should trigger effect w/ setter', function()
@@ -166,9 +166,9 @@ describe('reactivity/computed', function()
       dummy = n.value
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     plusOne.value = 0
-    expect(dummy):toBe(-1)
+    lu.assertEquals(dummy, -1)
   end
   )
   it('should warn if trying to set a readonly computed', function()

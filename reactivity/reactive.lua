@@ -1,7 +1,8 @@
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
-local V_GETTER, V_SETTER, SKIP, IS_REACTIVE, IS_SHALLOW, IS_READONLY, RAW, REACTIVE, READONLY =
+local computed = require("reactivity.computed").computed
+local V_GETTER, V_SETTER, SKIP, IS_REACTIVE, IS_SHALLOW, IS_READONLY, RAW, REACTIVE, READONLY, DEPSMAP =
     ReactiveFlags.V_GETTER,
     ReactiveFlags.V_SETTER,
     ReactiveFlags.SKIP,
@@ -10,7 +11,8 @@ local V_GETTER, V_SETTER, SKIP, IS_REACTIVE, IS_SHALLOW, IS_READONLY, RAW, REACT
     ReactiveFlags.IS_READONLY,
     ReactiveFlags.RAW,
     ReactiveFlags.REACTIVE,
-    ReactiveFlags.READONLY
+    ReactiveFlags.READONLY,
+    ReactiveFlags.DEPSMAP
 
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
@@ -65,14 +67,14 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
 
     -- -- support function to computed
     -- if type(val) == "function" then
-    --     val = Computed.computed(val)
+    --     val = computed(val)
     -- end
 
-    -- -- support computed and ref
-    -- if isRef(val) then
-    --     mt.__properties[key] = val
-    --     return
-    -- end
+    -- support computed and ref
+    if isRef(val) then
+        properties[key] = val
+        return
+    end
 
     local childOb = not shallow and createReactiveObject(val, isReadonly, shallow)
 
@@ -111,7 +113,7 @@ end
 
 createReactiveObject = function(target, isReadonly, shallow)
     if (type(target) ~= "table") then
-        return
+        return target
     end
 
     local observed = getmetatable(target)
@@ -122,6 +124,7 @@ createReactiveObject = function(target, isReadonly, shallow)
         observed[IS_READONLY] = isReadonly
         observed[IS_SHALLOW] = shallow
         observed[IS_REACTIVE] = true
+        observed[DEPSMAP] = {}
 
         local properties = {}
         observed.__properties = properties

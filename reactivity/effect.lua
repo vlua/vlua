@@ -1,13 +1,29 @@
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
+local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
 
-local type, ipairs, pairs, tinsert,xpcall, tremove, tunpack = type, ipairs, pairs, table.insert,xpcall, table.remove, table.unpack
+local assert, getmetatable, setmetatable, type, ipairs, pairs, tinsert, xpcall, tremove, tunpack =
+    assert,
+    getmetatable,
+    setmetatable,
+    type,
+    ipairs,
+    pairs,
+    table.insert,
+    xpcall,
+    table.remove,
+    table.unpack
+local V_GETTER, V_SETTER, IS_REF, DEPSMAP =
+    ReactiveFlags.V_GETTER,
+    ReactiveFlags.V_SETTER,
+    ReactiveFlags.IS_REF,
+    ReactiveFlags.DEPSMAP
 
 local reactiveUtils = require("reactivity.reactiveUtils")
-local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction,traceback,array_includes =
+local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback, array_includes =
     reactiveUtils.isObject,
     reactiveUtils.hasChanged,
     reactiveUtils.extend,
@@ -18,12 +34,6 @@ local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction,traceback,
     reactiveUtils.traceback,
     reactiveUtils.array_includes
 
--- The main WeakMap that stores {target -> key -> dep} connections.
--- Conceptually, it's easier to think of a dependency as a Dep class
--- which maintains a Set of subscribers, but we simply store them as
--- raw Sets to reduce memory overhead.
-local targetMap = setmetatable({}, {__mode = "k"})
-
 local effectStack = {}
 local activeEffect = nil
 local ITERATOR_KEY = "iterator"
@@ -32,7 +42,7 @@ local trackStack = {}
 local uid = 0
 
 local function isEffect(fn)
-    return type(fn) == 'table' and fn._isEffect == true
+    return type(fn) == "table" and fn._isEffect == true
 end
 
 local function pauseTracking()
@@ -57,8 +67,8 @@ local function cleanup(effect)
 end
 
 local function createReactiveEffect(fn, options)
-    local effect  = {}
-    effect.run = function(_effect, target, type, key, newValue, oldValue)
+    local effect = {}
+    local run = function(self, _effect, target, type, key, newValue, oldValue)
         if not effect.active then
             if options.scheduler then
                 return nil
@@ -68,13 +78,17 @@ local function createReactiveEffect(fn, options)
         end
         if not array_includes(effectStack, effect) then
             cleanup(effect)
-            local result, ret = xpcall(function()
-                    enableTracking()
-                    tinsert(effectStack, effect)
-                    activeEffect = effect
-                    return fn(effect, target, type, key, newValue, oldValue)
-                end, traceback)
-               
+            enableTracking()
+            tinsert(effectStack, effect)
+            activeEffect = effect
+
+            local result, ret =
+                xpcall(
+                fn,
+                traceback,
+                effect, target, type, key, newValue, oldValue
+            )
+
             tremove(effectStack)
             resetTracking()
             activeEffect = effectStack[#effectStack - 1]
@@ -89,6 +103,8 @@ local function createReactiveEffect(fn, options)
     effect.raw = fn
     effect.deps = {}
     effect.options = options
+    effect.__call = run
+    setmetatable(effect, effect)
     return effect
 end
 
@@ -101,9 +117,9 @@ local function effect(fn, options)
     end
     local effect = createReactiveEffect(fn, options)
     if not options.lazy then
-        effect.run()
+        effect()
     end
-    return effect.run
+    return effect
 end
 
 local function stop(effect)
@@ -116,15 +132,16 @@ local function stop(effect)
     end
 end
 
-
 local function track(target, type, key)
     if not shouldTrack or activeEffect == nil then
         return
     end
-    local depsMap = targetMap[target]
+    local mt = getmetatable(target)
+    assert(mt)
+    local depsMap = mt[DEPSMAP]
     if not depsMap then
         depsMap = {}
-        targetMap[target] = depsMap
+        mt[DEPSMAP] = depsMap
     end
     local dep = depsMap[key]
     if not dep then
@@ -135,13 +152,15 @@ local function track(target, type, key)
         dep[activeEffect] = true
         tinsert(activeEffect.deps, dep)
         if __DEV__ and activeEffect.options.onTrack then
-            activeEffect.options:onTrack({effect = activeEffect, target = target, type = type, key = key})
+            activeEffect.options.onTrack(activeEffect, target, type, key)
         end
     end
 end
 
 local function trigger(target, type, key, newValue, oldValue)
-    local depsMap = targetMap[target]
+    local mt = getmetatable(target)
+    assert(mt)
+    local depsMap = mt[DEPSMAP]
     if not depsMap then
         -- never been tracked
         return
@@ -151,7 +170,7 @@ local function trigger(target, type, key, newValue, oldValue)
         if effectsToAdd then
             for effect in pairs(effectsToAdd) do
                 if effect ~= activeEffect or not shouldTrack then
-                    tinsert(effects, effect)
+                    effects[effect] = true
                 -- the effect mutated its own dependency during its execution.
                 -- this can be caused by operations like foo.value++
                 -- do not trigger or we end in an infinite loop
@@ -163,7 +182,7 @@ local function trigger(target, type, key, newValue, oldValue)
     if type == TriggerOpTypes.CLEAR then
         -- collection being cleared
         -- trigger all effects for target
-        for _,v in pairs(depsMap) do
+        for _, v in pairs(depsMap) do
             add(v)
         end
     else
@@ -177,14 +196,14 @@ local function trigger(target, type, key, newValue, oldValue)
         end
     end
 
-    for _, effect in ipairs(effects) do
+    for effect in pairs(effects) do
         if __DEV__ and effect.options.onTrigger then
             effect.options.onTrigger(effect, target, type, key, newValue, oldValue)
         end
         if effect.options.scheduler then
             effect.options.scheduler(effect, target, type, key, newValue, oldValue)
         else
-            effect.run(effect, target, type, key, newValue, oldValue)
+            effect(effect, target, type, key, newValue, oldValue)
         end
     end
 end
@@ -194,5 +213,5 @@ return {
     track = track,
     stop = stop,
     effect = effect,
-    ITERATOR_KEY = ITERATOR_KEY,
+    ITERATOR_KEY = ITERATOR_KEY
 }

@@ -7,6 +7,7 @@ local ReactiveFlags = {
     RAW = "__v_raw",
     REACTIVE = "__v_reactive",
     READONLY = "__v_readonly",
+    DEPSMAP = "__v_depsMap",
     V_GETTER = 1,
     V_SETTER = 2,
 }

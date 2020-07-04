@@ -4,13 +4,13 @@ require("reactivity/src/effect")
 describe('shallowReactive', function()
   test('should not make non-reactive properties reactive', function()
     local props = shallowReactive({n={foo=1}})
-    expect(isReactive(props.n)):toBe(false)
+    lu.assertEquals(isReactive(props.n), false)
   end
   )
   test('should keep reactive properties reactive', function()
     local props = shallowReactive({n=reactive({foo=1})})
     props.n = reactive({foo=2})
-    expect(isReactive(props.n)):toBe(true)
+    lu.assertEquals(isReactive(props.n), true)
   end
   )
   describe('collections', function()
@@ -22,11 +22,11 @@ describe('shallowReactive', function()
         size = shallowSet.size
       end
       )
-      expect(size):toBe(0)
+      lu.assertEquals(size, 0)
       shallowSet:add(a)
-      expect(size):toBe(1)
+      lu.assertEquals(size, 1)
       shallowSet:delete(a)
-      expect(size):toBe(0)
+      lu.assertEquals(size, 0)
     end
     )
     test('should not observe when iterating', function()
@@ -34,7 +34,7 @@ describe('shallowReactive', function()
       local a = {}
       shallowSet:add(a)
       local spreadA = ({...})[0+1]
-      expect(isReactive(spreadA)):toBe(false)
+      lu.assertEquals(isReactive(spreadA), false)
     end
     )
     test('should not get reactive entry', function()
@@ -42,7 +42,7 @@ describe('shallowReactive', function()
       local a = {}
       local key = 'a'
       shallowMap:set(key, a)
-      expect(isReactive(shallowMap:get(key))):toBe(false)
+      lu.assertEquals(isReactive(shallowMap:get(key)), false)
     end
     )
     test('should not get reactive on foreach', function()
@@ -50,7 +50,7 @@ describe('shallowReactive', function()
       local a = {}
       shallowSet:add(a)
       shallowSet:forEach(function(x)
-        expect(isReactive(x)):toBe(false)
+        lu.assertEquals(isReactive(x), false)
       end
       )
     end
@@ -79,11 +79,11 @@ describe('shallowReactive', function()
         size = shallowArray.length
       end
       )
-      expect(size):toBe(0)
+      lu.assertEquals(size, 0)
       table.insert(shallowArray, a)
-      expect(size):toBe(1)
+      lu.assertEquals(size, 1)
       shallowArray:pop()
-      expect(size):toBe(0)
+      lu.assertEquals(size, 0)
     end
     )
     test('should not observe when iterating', function()
@@ -91,7 +91,7 @@ describe('shallowReactive', function()
       local a = {}
       table.insert(shallowArray, a)
       local spreadA = ({...})[0+1]
-      expect(isReactive(spreadA)):toBe(false)
+      lu.assertEquals(isReactive(spreadA), false)
     end
     )
     test('onTrack on called on objectSpread', function()

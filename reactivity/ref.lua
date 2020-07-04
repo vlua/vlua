@@ -5,7 +5,18 @@ local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local effect = require("reactivity.effect")
 local track, trigger, IPAIR_KEY, PAIR_KEY = effect.track, effect.trigger, effect.IPAIR_KEY, effect.PAIR_KEY
 
-local V_GETTER, V_SETTER, IS_REF = ReactiveFlags.V_GETTER, ReactiveFlags.V_SETTER, ReactiveFlags.IS_REF
+local V_GETTER, V_SETTER, SKIP, IS_REACTIVE, IS_SHALLOW, IS_READONLY, RAW, REACTIVE, READONLY, DEPSMAP, IS_REF =
+    ReactiveFlags.V_GETTER,
+    ReactiveFlags.V_SETTER,
+    ReactiveFlags.SKIP,
+    ReactiveFlags.IS_REACTIVE,
+    ReactiveFlags.IS_SHALLOW,
+    ReactiveFlags.IS_READONLY,
+    ReactiveFlags.RAW,
+    ReactiveFlags.REACTIVE,
+    ReactiveFlags.READONLY,
+    ReactiveFlags.DEPSMAP,
+    ReactiveFlags.IS_REF
 
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
@@ -61,6 +72,9 @@ return function(Reactive)
         end
 
         local RefMetatable = {
+            [IS_READONLY] = isReadonly,
+            [IS_SHALLOW] = shallow,
+            [IS_REACTIVE] = true,
             __index = function(self, key)
                 assert(key == "value", 'only access Ref getter with "value" key')
                 return getter()
@@ -73,7 +87,8 @@ return function(Reactive)
         refObject = {
             [V_GETTER] = getter,
             [V_SETTER] = setter,
-            [IS_REF] = true
+            [IS_REF] = true,
+            [DEPSMAP] = {}
         }
         setmetatable(refObject, RefMetatable)
         return refObject
@@ -86,7 +101,6 @@ return function(Reactive)
     local function shallowRef(value)
         return createRef(value, false, true)
     end
-
 
     local function readonlyShallowRef(value)
         return createRef(value, true, true)
@@ -116,6 +130,6 @@ return function(Reactive)
         readonlyRef = readonlyRef,
         readonlyShallowRef = readonlyShallowRef,
         triggerRef = triggerRef,
-        unref = unref,
+        unref = unref
     }
 end

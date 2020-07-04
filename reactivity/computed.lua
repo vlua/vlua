@@ -10,10 +10,18 @@ local track, trigger, IPAIR_KEY, PAIR_KEY, effect =
     Effect.PAIR_KEY,
     Effect.effect
 
-local V_GETTER, V_SETTER, IS_REF = ReactiveFlags.V_GETTER, ReactiveFlags.V_SETTER, ReactiveFlags.IS_REF
-
-local ref = require("reactivity.ref")
-local isRef = ref.isRef
+local V_GETTER, V_SETTER, SKIP, IS_REACTIVE, IS_SHALLOW, IS_READONLY, RAW, REACTIVE, READONLY, DEPSMAP, IS_REF =
+    ReactiveFlags.V_GETTER,
+    ReactiveFlags.V_SETTER,
+    ReactiveFlags.SKIP,
+    ReactiveFlags.IS_REACTIVE,
+    ReactiveFlags.IS_SHALLOW,
+    ReactiveFlags.IS_READONLY,
+    ReactiveFlags.RAW,
+    ReactiveFlags.REACTIVE,
+    ReactiveFlags.READONLY,
+    ReactiveFlags.DEPSMAP,
+    ReactiveFlags.IS_REF
 
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
@@ -35,7 +43,9 @@ local function computed(getter, setter)
     local computed = nil
     local runner =
         effect(
-        getter,
+        function(effect, target, type, key, newValue, oldValue)
+            return getter(target)
+        end,
         {
             lazy = true,
             -- mark effect as computed so that it gets priority during trigger
@@ -48,9 +58,9 @@ local function computed(getter, setter)
         }
     )
 
-    local getterImpl = function()
+    local getterImpl = function(self)
         if dirty then
-            value = runner()
+            value = runner(runner, self)
             dirty = false
         end
         track(computed, TrackOpTypes.GET, "value")
@@ -67,6 +77,9 @@ local function computed(getter, setter)
     end
 
     local RefMetatable = {
+        [IS_READONLY] = (setter == nil),
+        [IS_SHALLOW] = false,
+        [IS_REACTIVE] = true,
         __index = function(self, key)
             assert(key == "value", 'only access Ref getter with "value" key')
             return getter()

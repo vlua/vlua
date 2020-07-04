@@ -48,9 +48,27 @@ local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback
 local Reactive = {}
 
 local ref = require("reactivity.ref")(Reactive)
-local isRef, toRef = ref.isRef, ref.toRef
+local isRef, toRef, triggerRef = ref.isRef, ref.toRef, ref.triggerRef
 
 local createReactiveObject
+
+local createRefWrapper
+
+createRefWrapper = function(properties, key, value)
+    local setter = value[V_SETTER]
+    properties[key] = {
+        [V_GETTER] = value[V_GETTER],
+        [V_SETTER] = function(self, newVal)
+            -- 引用覆盖
+            if isRef(newVal) then
+                createRefWrapper(properties, key, newVal)
+                triggerRef(value)
+                return
+            end
+            setter(self, newVal)
+        end
+    }
+end
 
 --- Define a reactive property on an Object.
 ---@param target ReactiveObject
@@ -72,7 +90,7 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
 
     -- support computed and ref
     if isRef(val) then
-        properties[key] = val
+        createRefWrapper(properties, key, val)
         return
     end
 
@@ -91,8 +109,17 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
             if newVal == val then
                 return
             end
-            childOb = not shallow and createReactiveObject(newVal, isReadonly, shallow)
+            newVal = shallow and newVal or createReactiveObject(newVal, isReadonly, shallow)
+
             local oldValue = val
+
+            -- 对于新的Ref要处理
+            if isRef(newVal) then
+                createRefWrapper(properties, key, newVal)
+                trigger(target, TriggerOpTypes.SET, key, newVal, oldValue)
+                return
+            end
+
             val = newVal
             -- 删除元素
             if newVal == nil then
@@ -233,7 +260,7 @@ end
 
 local function isReactive(value)
     local observed = getmetatable(value)
-    return observed and observed[IS_READONLY]
+    return observed and observed[IS_REACTIVE]
 end
 
 local function markRaw(value)

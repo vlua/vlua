@@ -1,179 +1,233 @@
-require("date")
-require("reactivity/src/ref")
-require("reactivity/src/reactive")
-require("@vue/shared")
-require("reactivity/src/computed")
+local lu = require("test.luaunit")
+local Effect = require("reactivity.effect")
+local track, trigger, ITERATE_KEY, effect, stop =
+    Effect.track,
+    Effect.trigger,
+    Effect.ITERATE_KEY,
+    Effect.effect,
+    Effect.stop
 
-describe('reactivity/reactive', function()
-  mockWarn()
-  test('Object', function()
-    local original = {foo=1}
-    local observed = reactive(original)
-    expect(observed).tsvar_not:toBe(original)
-    lu.assertEquals(isReactive(observed), true)
-    lu.assertEquals(isReactive(original), false)
-    lu.assertEquals(observed.foo, 1)
-    lu.assertEquals(observed['foo'], true)
-    lu.assertEquals(Object:keys(observed), {'foo'})
-  end
-  )
-  test('proto', function()
-    local obj = {}
-    local reactiveObj = reactive(obj)
-    lu.assertEquals(isReactive(reactiveObj), true)
-    -- [ts2lua]reactiveObj下标访问可能不正确
-    local prototype = reactiveObj['__proto__']
-    local otherObj = {data={'a'}}
-    lu.assertEquals(isReactive(otherObj), false)
-    local reactiveOther = reactive(otherObj)
-    lu.assertEquals(isReactive(reactiveOther), true)
-    lu.assertEquals(reactiveOther.data[0+1], 'a')
-  end
-  )
-  test('nested reactives', function()
-    local original = {nested={foo=1}, array={{bar=2}}}
-    local observed = reactive(original)
-    lu.assertEquals(isReactive(observed.nested), true)
-    lu.assertEquals(isReactive(observed.array), true)
-    lu.assertEquals(isReactive(observed.array[0+1]), true)
-  end
-  )
-  test('observed value should proxy mutations to original (Object)', function()
-    local original = {foo=1}
-    local observed = reactive(original)
-    observed.bar = 1
-    lu.assertEquals(observed.bar, 1)
-    lu.assertEquals(original.bar, 1)
-    observed.foo = nil
-    lu.assertEquals(observed['foo'], false)
-    lu.assertEquals(original['foo'], false)
-  end
-  )
-  test('setting a property with an unobserved value should wrap with reactive', function()
-    local observed = reactive({})
-    local raw = {}
-    observed.foo = raw
-    expect(observed.foo).tsvar_not:toBe(raw)
-    lu.assertEquals(isReactive(observed.foo), true)
-  end
-  )
-  test('observing already observed value should return same Proxy', function()
-    local original = {foo=1}
-    local observed = reactive(original)
-    local observed2 = reactive(observed)
-    lu.assertEquals(observed2, observed)
-  end
-  )
-  test('observing the same value multiple times should return same Proxy', function()
-    local original = {foo=1}
-    local observed = reactive(original)
-    local observed2 = reactive(original)
-    lu.assertEquals(observed2, observed)
-  end
-  )
-  test('should not pollute original object with Proxies', function()
-    local original = {foo=1}
-    local original2 = {bar=2}
-    local observed = reactive(original)
-    local observed2 = reactive(original2)
-    observed.bar = observed2
-    lu.assertEquals(observed.bar, observed2)
-    lu.assertEquals(original.bar, original2)
-  end
-  )
-  test('toRaw', function()
-    local original = {foo=1}
-    local observed = reactive(original)
-    lu.assertEquals(toRaw(observed), original)
-    lu.assertEquals(toRaw(original), original)
-  end
-  )
-  test('toRaw on object using reactive as prototype', function()
-    local original = reactive({})
-    local obj = Object:create(original)
-    local raw = toRaw(obj)
-    lu.assertEquals(raw, obj)
-    expect(raw).tsvar_not:toBe(toRaw(original))
-  end
-  )
-  test('should not unwrap Ref<T>', function()
-    local observedNumberRef = reactive(ref(1))
-    local observedObjectRef = reactive(ref({foo=1}))
-    lu.assertEquals(isRef(observedNumberRef), true)
-    lu.assertEquals(isRef(observedObjectRef), true)
-  end
-  )
-  test('should unwrap computed refs', function()
-    local a = computed(function()
-      1
+local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
+
+local Reactive = require("reactivity.reactive")
+local computed = require("reactivity.computed").computed
+local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
+local reactive, markRaw, isReactive = Reactive.reactive, Reactive.markRaw, Reactive.isReactive
+local Ref = require("reactivity.ref")(Reactive)
+local ref, isRef = Ref.ref, Ref.isRef
+
+describe(
+    "reactivity/reactive",
+    function()
+        it(
+            "Object",
+            function()
+                local original = {foo = 1}
+                local observed = reactive(original)
+                lu.assertEquals(observed, original)
+                lu.assertEquals(isReactive(observed), true)
+                lu.assertEquals(isReactive(original), true)
+                lu.assertEquals(observed.foo, 1)
+                lu.assertEquals(observed["foo"] ~= nil, true)
+                for i, v in pairs(observed) do
+                    lu.assertEquals(i, "foo")
+                end
+            end
+        )
+        it(
+            "proto",
+            function()
+                local obj = {}
+                local reactiveObj = reactive(obj)
+                lu.assertEquals(isReactive(reactiveObj), true)
+                -- [ts2lua]reactiveObj下标访问可能不正确
+                local prototype = reactiveObj["__proto__"]
+                local otherObj = {data = {"a"}}
+                lu.assertEquals(isReactive(otherObj) == true, false)
+                local reactiveOther = reactive(otherObj)
+                lu.assertEquals(isReactive(reactiveOther) == true, true)
+                lu.assertEquals(reactiveOther.data[0 + 1], "a")
+            end
+        )
+        it(
+            "nested reactives",
+            function()
+                local original = {nested = {foo = 1}, array = {{bar = 2}}}
+                local observed = reactive(original)
+                lu.assertEquals(isReactive(observed.nested), true)
+                lu.assertEquals(isReactive(observed.array), true)
+                lu.assertEquals(isReactive(observed.array[0 + 1]), true)
+            end
+        )
+        it(
+            "observed value should proxy mutations to original (Object)",
+            function()
+                local original = {foo = 1}
+                local observed = reactive(original)
+                observed.bar = 1
+                lu.assertEquals(observed.bar, 1)
+                lu.assertEquals(original.bar, 1)
+                observed.foo = nil
+                lu.assertEquals(observed["foo"] ~= nil, false)
+                lu.assertEquals(original["foo"] ~= nil, false)
+            end
+        )
+        it(
+            "setting a property with an unobserved value should wrap with reactive",
+            function()
+                local observed = reactive({})
+                local raw = {}
+                observed.foo = raw
+                lu.assertEquals(observed.foo, raw)
+                lu.assertEquals(isReactive(observed.foo), true)
+            end
+        )
+        it(
+            "observing already observed value should return same Proxy",
+            function()
+                local original = {foo = 1}
+                local observed = reactive(original)
+                local observed2 = reactive(observed)
+                lu.assertEquals(observed2, observed)
+            end
+        )
+        it(
+            "observing the same value multiple times should return same Proxy",
+            function()
+                local original = {foo = 1}
+                local observed = reactive(original)
+                local observed2 = reactive(original)
+                lu.assertEquals(observed2, observed)
+            end
+        )
+        it(
+            "should not pollute original object with Proxies",
+            function()
+                local original = {foo = 1}
+                local original2 = {bar = 2}
+                local observed = reactive(original)
+                local observed2 = reactive(original2)
+                observed.bar = observed2
+                lu.assertEquals(observed.bar, observed2)
+                lu.assertEquals(original.bar, original2)
+            end
+        )
+        it(
+            "toRaw",
+            function()
+                local original = {foo = 1}
+                local observed = reactive(original)
+                lu.assertEquals((observed), original)
+                lu.assertEquals((original), original)
+            end
+        )
+        it(
+            "toRaw on object using reactive as prototype",
+            function()
+                local original = reactive({})
+                local obj = {original}
+                local raw = (obj)
+                lu.assertEquals(raw, obj)
+                lu.assertNotEquals(raw, (original))
+            end
+        )
+        it(
+            "should not unwrap Ref<T>",
+            function()
+                local observedNumberRef = reactive(ref(1))
+                local observedObjectRef = reactive(ref({foo = 1}))
+                lu.assertEquals(isRef(observedNumberRef), true)
+                lu.assertEquals(isRef(observedObjectRef), true)
+            end
+        )
+        it(
+            "should unwrap computed refs",
+            function()
+                local a =
+                    computed(
+                    function()
+                        return 1
+                    end
+                )
+                local b =
+                    computed(
+                    function()
+                        return 1
+                    end,
+                    function()
+                    end
+                )
+                local obj = reactive({a = a, b = b})
+                local aa = obj.a + 1
+                local aa = obj.b + 1
+                lu.assertEquals(type(obj.a), "number")
+                lu.assertEquals(type(obj.b), "number")
+            end
+        )
+        it(
+            "should allow setting property from a ref to another ref",
+            function()
+                local foo = ref(0)
+                local bar = ref(1)
+                local observed = reactive({a = foo})
+                local dummy =
+                    computed(
+                    function()
+                        return observed.a
+                    end
+                )
+                lu.assertEquals(dummy.value, 0)
+                observed.a = bar
+                lu.assertEquals(dummy.value, 1)
+                bar.value = bar.value + 1
+                lu.assertEquals(dummy.value, 2)
+            end
+        )
+        it(
+            "non-observable values",
+            function()
+                local assertValue = function(value)
+                    reactive(value)
+                    expect():toHaveBeenWarnedLast()
+                end
+
+                assertValue(1)
+                assertValue("foo")
+                assertValue(false)
+                assertValue(nil)
+                assertValue(undefined)
+                local s = Symbol()
+                assertValue(s)
+                local p = Promise:resolve()
+                lu.assertEquals(reactive(p), p)
+                local r = ""
+                lu.assertEquals(reactive(r), r)
+                local d = Date()
+                lu.assertEquals(reactive(d), d)
+            end
+        )
+        it(
+            "markRaw",
+            function()
+                local obj = reactive({foo = {a = 1}, bar = markRaw({b = 2})})
+                lu.assertEquals(isReactive(obj.foo), true)
+                lu.assertEquals(isReactive(obj.bar), false)
+            end
+        )
+        it(
+            "should not observe frozen objects",
+            function()
+                local obj = reactive({foo = Object:freeze({a = 1})})
+                lu.assertEquals(isReactive(obj.foo), false)
+            end
+        )
+        it(
+            "should not observe objects with __v_skip",
+            function()
+                local original = {foo = 1, __v_skip = true}
+                local observed = reactive(original)
+                lu.assertEquals(isReactive(observed), false)
+            end
+        )
     end
-    )
-    local b = computed({get=function()
-      1
-    end
-    , set=function()
-      
-    end
-    })
-    local obj = reactive({a=a, b=b})
-    obj.a + 1
-    obj.b + 1
-    lu.assertEquals(type(obj.a), )
-    lu.assertEquals(type(obj.b), )
-  end
-  )
-  test('should allow setting property from a ref to another ref', function()
-    local foo = ref(0)
-    local bar = ref(1)
-    local observed = reactive({a=foo})
-    local dummy = computed(function()
-      observed.a
-    end
-    )
-    lu.assertEquals(dummy.value, 0)
-    observed.a = bar
-    lu.assertEquals(dummy.value, 1)
-    bar.value=bar.value+1
-    lu.assertEquals(dummy.value, 2)
-  end
-  )
-  test('non-observable values', function()
-    local assertValue = function(value)
-      reactive(value)
-      expect():toHaveBeenWarnedLast()
-    end
-    
-    assertValue(1)
-    assertValue('foo')
-    assertValue(false)
-    assertValue(nil)
-    assertValue(undefined)
-    local s = Symbol()
-    assertValue(s)
-    local p = Promise:resolve()
-    lu.assertEquals(reactive(p), p)
-    local r = ''
-    lu.assertEquals(reactive(r), r)
-    local d = Date()
-    lu.assertEquals(reactive(d), d)
-  end
-  )
-  test('markRaw', function()
-    local obj = reactive({foo={a=1}, bar=markRaw({b=2})})
-    lu.assertEquals(isReactive(obj.foo), true)
-    lu.assertEquals(isReactive(obj.bar), false)
-  end
-  )
-  test('should not observe frozen objects', function()
-    local obj = reactive({foo=Object:freeze({a=1})})
-    lu.assertEquals(isReactive(obj.foo), false)
-  end
-  )
-  test('should not observe objects with __v_skip', function()
-    local original = {foo=1, __v_skip=true}
-    local observed = reactive(original)
-    lu.assertEquals(isReactive(observed), false)
-  end
-  )
-end
 )

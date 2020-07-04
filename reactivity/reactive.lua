@@ -94,8 +94,8 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
             val = newVal
             -- 删除元素
             if newVal == nil then
-                -- 修改元素
-                trigger(target, TriggerOpTypes.DELETE, key, nil, oldValue)
+                properties[key] = nil
+                trigger(target, TriggerOpTypes.DELETE, key, newVal, oldValue)
             else
                 trigger(target, TriggerOpTypes.SET, key, newVal, oldValue)
             end

@@ -198,7 +198,7 @@ describe('reactivity/effect', function()
     local dummy = nil
     local list = reactive({'Hello'})
     effect(function()
-      dummy = list:join(' ')
+      dummy = table.concat(list, ' ')
     end
     )
     lu.assertEquals(dummy, 'Hello')
@@ -213,7 +213,7 @@ describe('reactivity/effect', function()
     local list = reactive({})
     list[1+1] = 'World!'
     effect(function()
-      dummy = list:join(' ')
+      dummy = table.concat(list, ' ')
     end
     )
     lu.assertEquals(dummy, ' World!')

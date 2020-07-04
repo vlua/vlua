@@ -39,10 +39,10 @@ local function computed(getter, setter)
         {
             lazy = true,
             -- mark effect as computed so that it gets priority during trigger
-            scheduler = function()
+            scheduler = function(effect, target, type, key, newValue, oldValue)
                 if not dirty then
                     dirty = true
-                    trigger(computed, TriggerOpTypes.SET, "value")
+                    trigger(computed, TriggerOpTypes.SET, "value", newValue, oldValue)
                 end
             end
         }
@@ -77,8 +77,8 @@ local function computed(getter, setter)
         end
     }
     computed = {
-        [V_GETTER] = getter,
-        [V_SETTER] = setter,
+        [V_GETTER] = getterImpl,
+        [V_SETTER] = setterImpl,
         [IS_REF] = true,
         -- expose effect so computed can be stopped
         effect = runner

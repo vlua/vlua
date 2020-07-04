@@ -58,22 +58,21 @@ end
 
 local function createReactiveEffect(fn, options)
     local effect  = {}
-    effect.run = function(...)
+    effect.run = function(_effect, target, type, key, newValue, oldValue)
         if not effect.active then
             if options.scheduler then
                 return nil
             else
-                return fn(...)
+                return fn(effect, target, type, key, newValue, oldValue)
             end
         end
         if not array_includes(effectStack, effect) then
             cleanup(effect)
-            local args = {...}
             local result, ret = xpcall(function()
                     enableTracking()
                     tinsert(effectStack, effect)
                     activeEffect = effect
-                    return fn(tunpack(args))
+                    return fn(effect, target, type, key, newValue, oldValue)
                 end, traceback)
                
             tremove(effectStack)
@@ -141,7 +140,7 @@ local function track(target, type, key)
     end
 end
 
-local function trigger(target, type, key, newValue, oldValue, oldTarget)
+local function trigger(target, type, key, newValue, oldValue)
     local depsMap = targetMap[target]
     if not depsMap then
         -- never been tracked
@@ -180,22 +179,12 @@ local function trigger(target, type, key, newValue, oldValue, oldTarget)
 
     for _, effect in ipairs(effects) do
         if __DEV__ and effect.options.onTrigger then
-            effect.options:onTrigger(
-                {
-                    effect = effect,
-                    target = target,
-                    key = key,
-                    type = type,
-                    newValue = newValue,
-                    oldValue = oldValue,
-                    oldTarget = oldTarget
-                }
-            )
+            effect.options.onTrigger(effect, target, type, key, newValue, oldValue)
         end
         if effect.options.scheduler then
-            effect.options:scheduler(effect)
+            effect.options.scheduler(effect, target, type, key, newValue, oldValue)
         else
-            effect.run()
+            effect.run(effect, target, type, key, newValue, oldValue)
         end
     end
 end

@@ -172,14 +172,6 @@ local function trigger(target, type, key, newValue, oldValue, oldTarget)
         for _,v in pairs(depsMap) do
             add(v)
         end
-    -- elseif key == "length" and isArray(target) then
-    --     depsMap:forEach(
-    --         function(dep, key)
-    --             if key == "length" or key >= newValue then
-    --                 add(dep)
-    --             end
-    --         end
-    --     )
     else
         -- schedule runs for SET | ADD | DELETE
         if key ~= nil then
@@ -190,7 +182,8 @@ local function trigger(target, type, key, newValue, oldValue, oldTarget)
             add(depsMap[ITERATOR_KEY])
         end
     end
-    local run = function(effect)
+
+    for _, effect in ipairs(effects) do
         if __DEV__ and effect.options.onTrigger then
             effect.options:onTrigger(
                 {
@@ -210,14 +203,11 @@ local function trigger(target, type, key, newValue, oldValue, oldTarget)
             effect()
         end
     end
-
-    for _, v in ipairs(effects) do
-        run(v)
-    end
 end
 
 return {
     trigger = trigger,
     track = track,
+    stop = stop,
     ITERATOR_KEY = ITERATOR_KEY,
 }

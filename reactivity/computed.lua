@@ -69,3 +69,7 @@ local function computed(getterOrOptions)
     }
     return computed
 end
+
+return {
+    computed = computed
+}

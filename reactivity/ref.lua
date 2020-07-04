@@ -19,110 +19,123 @@ local isObject, hasChanged, extend, warn, NOOP, isFunction =
     reactiveUtils.NOOP,
     reactiveUtils.isFunction
 
-local RefSymbol = nil
-local convert = function(val)
-    if type(val) == "table" then
-        return reactive(val)
-    else
-        return val
+return function(Reactive)
+    local function isRef(r)
+        if r and r.__v_isRef == true then
+            return true
+        else
+            return false
+        end
     end
-end
-local function createRef(rawValue, shallow)
-    if shallow == nil then
-        shallow = false
+
+    local RefSymbol = nil
+    local convert = function(val)
+        if isObject(val) then
+            return Reactive.reactive(val)
+        else
+            return val
+        end
     end
-    if isRef(rawValue) then
-        return rawValue
-    end
-    local value = (shallow and {rawValue} or {convert(rawValue)})[1]
-    local r
-    r = {
-        __v_isRef = true,
-        value = function()
-            track(r, TrackOpTypes.GET, "value")
-            return value
-        end,
-        value = function(newVal)
-            if hasChanged(toRaw(newVal), rawValue) then
-                rawValue = newVal
-                value = (shallow and {newVal} or {convert(newVal)})[1]
-                trigger(r, TriggerOpTypes.SET, "value", __DEV__ and {newValue = newVal} or nil)
+
+    local function createRef(rawValue, shallow)
+        if shallow == nil then
+            shallow = false
+        end
+        if isRef(rawValue) then
+            return rawValue
+        end
+        local value = shallow and rawValue or convert(rawValue)
+        local r
+        r = {
+            __v_isRef = true,
+            value = function()
+                track(r, TrackOpTypes.GET, "value")
+                return value
+            end,
+            value = function(newVal)
+                if hasChanged(Reactive.toRaw(newVal), rawValue) then
+                    rawValue = newVal
+                    value = (shallow and {newVal} or {convert(newVal)})[1]
+                    trigger(r, TriggerOpTypes.SET, "value", __DEV__ and {newValue = newVal} or nil)
+                end
             end
-        end
-    }
-    return r
-end
-
-local function isRef(r)
-    return (r and {r.__v_isRef == true} or {false})[1]
-end
-
-local function ref(value)
-    return createRef(value)
-end
-
-local function shallowRef(value)
-    return createRef(value, true)
-end
-
-local function triggerRef(ref)
-    trigger(ref, TriggerOpTypes.SET, "value", __DEV__ and {newValue = ref.value} or nil)
-end
-
-local function unref(ref)
-    if isRef(ref) then
-        return ref.value
-    else
-        return ref
+        }
+        return r
     end
-end
 
-local function customRef(factory)
-    local r
-    local get, set =
-        factory(
-        function()
-            track(r, TrackOpTypes.GET, "value")
-        end,
-        function()
-            trigger(r, TriggerOpTypes.SET, "value")
-        end
-    )
-    r = {
-        __v_isRef = true,
-        value = function()
-            return get()
-        end,
-        value = function(v)
-            set(v)
-        end
-    }
-    return r
-end
-
-local function toRefs(object)
-    if __DEV__ and not isProxy(object) then
-        warn()
+    local function ref(value)
+        return createRef(value)
     end
-    local ret = {}
-    for key in pairs(object) do
-        ret[key] = toRef(object, key)
-    end
-    return ret
-end
 
-local function toRef(object, key)
+    local function shallowRef(value)
+        return createRef(value, true)
+    end
+
+    local function triggerRef(ref)
+        trigger(ref, TriggerOpTypes.SET, "value", __DEV__ and {newValue = ref.value} or nil)
+    end
+
+    local function unref(ref)
+        if isRef(ref) then
+            return ref.value
+        else
+            return ref
+        end
+    end
+
+    local function customRef(factory)
+        local r
+        local get, set =
+            factory(
+            function()
+                track(r, TrackOpTypes.GET, "value")
+            end,
+            function()
+                trigger(r, TriggerOpTypes.SET, "value")
+            end
+        )
+        r = {
+            __v_isRef = true,
+            value = function()
+                return get()
+            end,
+            value = function(v)
+                set(v)
+            end
+        }
+        return r
+    end
+
+    local function toRef(object, key)
+        return {
+            __v_isRef = true,
+            value = function()
+                return object[key]
+            end,
+            value = function(newVal)
+                object[key] = newVal
+            end
+        }
+    end
+
+    local function toRefs(object)
+        if __DEV__ and not Reactive.isProxy(object) then
+            warn("cannot toRefs from a non proxy object")
+        end
+        local ret = {}
+        for key in pairs(object) do
+            ret[key] = toRef(object, key)
+        end
+        return ret
+    end
+
     return {
-        __v_isRef = true,
-        value = function()
-            return object[key]
-        end,
-        value = function(newVal)
-            object[key] = newVal
-        end
+        isRef = isRef,
+        toRef = toRef,
+        ref = ref,
+        shallowRef = shallowRef,
+        triggerRef = triggerRef,
+        unref = unref,
+        customRef = customRef
     }
 end
-
-return {
-    isRef = isRef
-}

@@ -1,8 +1,7 @@
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
-local type = type
-local pairs = pairs
+local type, pairs, ltraceback, xpcall, tinsert = type, pairs, debug.traceback, xpcall, table.tinsert
 
 --[[*
  * Quick object check - this is primarily used to tell
@@ -31,17 +30,40 @@ local function extend(to, _from)
     return to
 end
 
-local function NOOP()end
+local function NOOP()
+end
 local EMPTY_OBJ = {}
 
 local warn = print
 
 local function traceback(msg)
-    warn(debug.traceback(msg))
+    warn(ltraceback(msg))
 end
 
 local function proxy()
+end
 
+local function callWithErrorHandling(fn, instance, type, ...)
+    return xpcall(
+        fn,
+        function(err)
+            warn(ltraceback(err, instance, type))
+        end,
+        instance,
+        ...
+    )
+end
+
+local function callWithAsyncErrorHandling(fn, instance, type, ...)
+    if isFunction(fn) then
+        local res = callWithErrorHandling(fn, instance, type, ...)
+        return res
+    end
+    local values = {}
+    for i = 1, #fn do
+        tinsert(values, callWithAsyncErrorHandling(fn[i], instance, type, ...))
+    end
+    return values
 end
 
 return {
@@ -53,5 +75,7 @@ return {
     NOOP = NOOP,
     EMPTY_OBJ = EMPTY_OBJ,
     traceback = traceback,
-    proxy = proxy
+    proxy = proxy,
+    callWithErrorHandling = callWithErrorHandling,
+    callWithAsyncErrorHandling = callWithAsyncErrorHandling
 }

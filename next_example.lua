@@ -38,6 +38,21 @@ function()return obData.actor.ff end,
     {flush = "sync"}
 )
 
+local dd =
+watch(
+function()
+    local new = {}
+    for i,v in pairs(obData.actor) do
+        new[i] = v
+     end
+     return new
+ end,
+    function(vm, value, old)
+        print(string.format("onValueChanged : %s -> %s", old, value))
+    end,
+    {flush = "sync"}
+)
+
 obData.actor.aname = "a3"
 
 obData.actor.aname = nil

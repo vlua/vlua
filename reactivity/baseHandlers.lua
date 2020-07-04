@@ -21,6 +21,31 @@ return function(Reactive)
     local ref = require("reactivity.ref")(Reactive)
     local isRef = ref.isRef
 
+    local ProxyMetatable = {
+        __index = function(self, key)
+            return self[2].get(self[1], key, self)
+        end,
+        __newindex = function(self, key, value)
+            if value ~= nil then
+                self[2].set(self[1], key, value, self)
+            else
+                self[2].del(self[1], key, self)
+            end
+        end,
+        __pairs = function(self)
+            self[2].iterator(self[1])
+            return pairs(self[1])
+        end,
+        __ipairs = function(self)
+            self[2].iterator(self[1])
+            return ipairs(self[1])
+        end,
+        __len = function(self)
+            self[2].iterator(self[1])
+            return #self[1]
+        end
+    }
+
     local function createGetter(isReadonly, shallow)
         if isReadonly == nil then
             isReadonly = false
@@ -155,33 +180,8 @@ return function(Reactive)
     local shallowReadonlyHandlers = extend({}, readonlyHandlers, {get = shallowReadonlyGet})
 
     local function createProxy(target, handlers)
-        local proxy = {}
-
-        local mt = {
-            __index = function(self, key)
-                return handlers.get(target, key, self)
-            end,
-            __newindex = function(self, key, value)
-                if value ~= nil then
-                    handlers.set(target, key, value, self)
-                else
-                    handlers.del(target, key, self)
-                end
-            end,
-            __pairs = function(self)
-                handlers.iterator(target)
-                return pairs(target)
-            end,
-            __ipairs = function(self)
-                handlers.iterator(target)
-                return ipairs(target)
-            end,
-            __len = function(self)
-                handlers.iterator(target)
-                return #target
-            end
-        }
-        return setmetatable(proxy, mt)
+        local proxy = {target, handlers}
+        return setmetatable(proxy, ProxyMetatable)
     end
 
     return {

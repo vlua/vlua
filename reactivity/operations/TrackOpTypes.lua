@@ -1,6 +1,6 @@
 local TrackOpTypes = {
     GET = "get",
     HAS = "has",
-    ITERATOR = "iterator",
+    ITERATE = "iterate",
 }
 return TrackOpTypes

@@ -32,7 +32,7 @@ local next, rawget, rawset, type, ipairs, pairs, tinsert, xpcall, getmetatable, 
     tostring
 
 local effect = require("reactivity.effect")
-local track, trigger, ITERATOR_KEY = effect.track, effect.trigger, effect.ITERATOR_KEY
+local track, trigger, ITERATE_KEY = effect.track, effect.trigger, effect.ITERATE_KEY
 
 local reactiveUtils = require("reactivity.reactiveUtils")
 local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback =
@@ -162,7 +162,7 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- map遍历
         observed.__pairs = function(self)
             if not isReadonly then
-                track(target, TrackOpTypes.ITERATOR, ITERATOR_KEY)
+                track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
             end
             local key, valueStore
             return function()
@@ -174,7 +174,7 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- 数组遍历
         observed.__ipairs = function(self)
             if not isReadonly then
-                track(target, TrackOpTypes.ITERATOR, ITERATOR_KEY)
+                track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
             end
             local i = 1
             local valueStore
@@ -188,7 +188,7 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- 获取table大小
         observed.__len = function()
             if not isReadonly then
-                track(target, TrackOpTypes.ITERATOR, ITERATOR_KEY)
+                track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
             end
             return #properties
         end

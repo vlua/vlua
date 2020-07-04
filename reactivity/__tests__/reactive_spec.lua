@@ -14,7 +14,7 @@ describe('reactivity/reactive', function()
     lu.assertEquals(isReactive(original), false)
     lu.assertEquals(observed.foo, 1)
     lu.assertEquals(observed['foo'], true)
-    expect(Object:keys(observed)):toEqual({'foo'})
+    lu.assertEquals(Object:keys(observed), {'foo'})
   end
   )
   test('proto', function()

@@ -36,7 +36,7 @@ local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback
 
 local effectStack = {}
 local activeEffect = nil
-local ITERATOR_KEY = "iterator"
+local ITERATE_KEY = "iterate"
 local shouldTrack = true
 local trackStack = {}
 local uid = 0
@@ -62,18 +62,22 @@ end
 
 local function cleanup(effect)
     if #effect.deps > 0 then
+        for i, v in ipairs(effect.deps) do
+            v[effect] = nil
+        end
+
         effect.deps = {}
     end
 end
 
 local function createReactiveEffect(fn, options)
     local effect = {}
-    local run = function(self, _effect, target, type, key, newValue, oldValue)
+    local run = function(self, ...)
         if not effect.active then
             if options.scheduler then
                 return nil
             else
-                return fn(effect, target, type, key, newValue, oldValue)
+                return fn(...)
             end
         end
         if not array_includes(effectStack, effect) then
@@ -82,16 +86,11 @@ local function createReactiveEffect(fn, options)
             tinsert(effectStack, effect)
             activeEffect = effect
 
-            local result, ret =
-                xpcall(
-                fn,
-                traceback,
-                effect, target, type, key, newValue, oldValue
-            )
+            local result, ret = xpcall(fn, traceback, ...)
 
             tremove(effectStack)
             resetTracking()
-            activeEffect = effectStack[#effectStack - 1]
+            activeEffect = effectStack[#effectStack]
             return ret
         end
     end
@@ -149,7 +148,7 @@ local function track(target, type, key)
         depsMap[key] = dep
     end
     if not dep[activeEffect] then
-        dep[activeEffect] = true
+        dep[activeEffect] = activeEffect
         tinsert(activeEffect.deps, dep)
         if __DEV__ and activeEffect.options.onTrack then
             activeEffect.options.onTrack(activeEffect, target, type, key)
@@ -192,7 +191,7 @@ local function trigger(target, type, key, newValue, oldValue)
         end
         -- also run for iteration key on ADD | DELETE | Map.SET
         if type == TriggerOpTypes.ADD or type == TriggerOpTypes.DELETE then
-            add(depsMap[ITERATOR_KEY])
+            add(depsMap[ITERATE_KEY])
         end
     end
 
@@ -213,5 +212,5 @@ return {
     track = track,
     stop = stop,
     effect = effect,
-    ITERATOR_KEY = ITERATOR_KEY
+    ITERATE_KEY = ITERATE_KEY
 }

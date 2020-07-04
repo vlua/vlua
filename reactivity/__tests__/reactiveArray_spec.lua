@@ -13,7 +13,7 @@ describe('reactivity/reactive/Array', function()
     lu.assertEquals(isReactive(observed[0+1]), true)
     lu.assertEquals(observed[0+1].foo, 1)
     lu.assertEquals(observed[0], true)
-    expect(Object:keys(observed)):toEqual({'0'})
+    lu.assertEquals(Object:keys(observed), {'0'})
   end
   )
   test('cloned reactive Array should point to observed values', function()
@@ -88,9 +88,9 @@ describe('reactivity/reactive/Array', function()
       fn(#arr)
     end
     )
-    expect(fn):toHaveBeenCalledTimes(1)
+    fn.toHaveBeenCalledTimes(1)
     arr[1+1] = nil
-    expect(fn):toHaveBeenCalledTimes(1)
+    fn.toHaveBeenCalledTimes(1)
   end
   )
   describe('Array methods w/ refs', function()

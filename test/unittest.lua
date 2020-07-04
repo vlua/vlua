@@ -175,6 +175,9 @@ function lu.createSpy(nameOrFn)
     function spy.toHaventBeenCalled()
         lu.assertEquals(#spy.calls, 0, "but called with name:" .. name)
     end
+    function spy.toHaveBeenCalledTimes(times)
+        lu.assertEquals(#spy.calls, times, "but called with name:" .. name)
+    end
 
     setmetatable(spy, spy)
     return spy, spy.call

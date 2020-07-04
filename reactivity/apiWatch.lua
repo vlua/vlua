@@ -2,10 +2,10 @@ local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local ErrorCodes = require("reactivity.ErrorCodes")
 local Effect = require("reactivity.effect")
-local track, trigger, ITERATOR_KEY, stop, effect =
+local track, trigger, ITERATE_KEY, stop, effect =
     Effect.track,
     Effect.trigger,
-    Effect.ITERATOR_KEY,
+    Effect.ITERATE_KEY,
     Effect.stop,
     Effect.effect
 

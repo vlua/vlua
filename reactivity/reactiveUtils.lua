@@ -1,7 +1,7 @@
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
-local type, pairs, ltraceback, xpcall, tinsert = type, pairs, debug.traceback, xpcall, table.tinsert
+local type, ipairs, pairs, ltraceback, xpcall, tinsert = type, ipairs, pairs, debug.traceback, xpcall, table.tinsert
 
 --[[*
  * Quick object check - this is primarily used to tell
@@ -40,11 +40,8 @@ local function traceback(msg)
     warn(ltraceback(msg))
 end
 
-local function proxy()
-end
-
 local function callWithErrorHandling(fn, instance, type, ...)
-    return xpcall(
+    local result, ret = xpcall(
         fn,
         function(err)
             warn(ltraceback(err, instance, type))
@@ -52,6 +49,7 @@ local function callWithErrorHandling(fn, instance, type, ...)
         instance,
         ...
     )
+    return ret
 end
 
 local function callWithAsyncErrorHandling(fn, instance, type, ...)
@@ -66,6 +64,15 @@ local function callWithAsyncErrorHandling(fn, instance, type, ...)
     return values
 end
 
+local function array_includes(t, value)
+    for i, v in ipairs(t) do
+        if v == value then
+            return true
+        end
+    end
+    return false
+end
+
 return {
     isObject = isObject,
     isFunction = isFunction,
@@ -75,7 +82,7 @@ return {
     NOOP = NOOP,
     EMPTY_OBJ = EMPTY_OBJ,
     traceback = traceback,
-    proxy = proxy,
     callWithErrorHandling = callWithErrorHandling,
-    callWithAsyncErrorHandling = callWithAsyncErrorHandling
+    callWithAsyncErrorHandling = callWithAsyncErrorHandling,
+    array_includes = array_includes,
 }

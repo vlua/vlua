@@ -11,7 +11,7 @@ local effect = require("reactivity.effect")
 local track, trigger, ITERATOR_KEY = effect.track, effect.trigger, effect.ITERATOR_KEY
 
 local reactiveUtils = require("reactivity.reactiveUtils")
-local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback, proxy =
+local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback =
     reactiveUtils.isObject,
     reactiveUtils.hasChanged,
     reactiveUtils.extend,
@@ -19,8 +19,7 @@ local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction, traceback
     reactiveUtils.NOOP,
     reactiveUtils.EMPTY_OBJ,
     reactiveUtils.isFunction,
-    reactiveUtils.traceback,
-    reactiveUtils.proxy
+    reactiveUtils.traceback
 
 local Reactive = {}
 
@@ -28,11 +27,12 @@ local ref = require("reactivity.ref")(Reactive)
 local isRef, toRef = ref.isRef, ref.toRef
 
 local baseHandlers = require("reactivity.baseHandlers")(Reactive)
-local mutableHandlers, shallowReactiveHandlers, readonlyHandlers, shallowReadonlyHandlers =
+local mutableHandlers, shallowReactiveHandlers, readonlyHandlers, shallowReadonlyHandlers, createProxy =
     baseHandlers.mutableHandlers,
     baseHandlers.shallowReactiveHandlers,
     baseHandlers.readonlyHandlers,
-    baseHandlers.shallowReadonlyHandlers
+    baseHandlers.shallowReadonlyHandlers,
+    baseHandlers.createProxy
 
 local function toRaw(observed)
     return observed and toRaw(observed[ReactiveFlags.RAW]) or observed
@@ -62,7 +62,7 @@ local function createReactiveObject(target, isReadonly, baseHandlers)
     if not canObserve(target) then
         return target
     end
-    local observed = proxy(target, baseHandlers)
+    local observed = createProxy(target, baseHandlers)
     target[isReadonly and ReactiveFlags.READONLY or ReactiveFlags.REACTIVE] = observed
     return observed
 end

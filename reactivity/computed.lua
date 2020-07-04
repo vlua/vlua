@@ -3,7 +3,7 @@ local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 
 local effect = require("reactivity.effect")
-local track, trigger, IPAIR_KEY, PAIR_KEY = effect.track, effect.trigger, effect.IPAIR_KEY, effect.PAIR_KEY
+local track, trigger, IPAIR_KEY, PAIR_KEY, createEffect = effect.track, effect.trigger, effect.IPAIR_KEY, effect.PAIR_KEY, effect.createEffect
 
 local ref = require("reactivity.ref")
 local isRef = ref.isRef
@@ -38,7 +38,7 @@ local function computed(getterOrOptions)
     local value = nil
     local computed = nil
     local runner =
-        effect(
+        createEffect(
         getter,
         {
             lazy = true,

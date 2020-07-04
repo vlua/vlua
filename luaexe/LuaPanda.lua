@@ -47,7 +47,7 @@ local consoleLogLevel = 2;           --打印在控制台(print)的日志等级 
 local connectTimeoutSec = 0.005;       --等待连接超时时间, 单位s. 时间过长等待attach时会造成卡顿，时间过短可能无法连接。建议值0.005 - 0.05
 --用户设置项END
 
-local debuggerVer = "3.0.2";                 --debugger版本号
+local debuggerVer = "3.1.0";                 --debugger版本号
 LuaPanda = {};
 local this = LuaPanda;
 local tools = {};     --引用的开源工具，包括json解析和table展开工具等
@@ -920,7 +920,7 @@ function this.dataProcess( dataStr )
             elseif tonumber(newValue) and needFindVariable == true then newValue = tonumber(newValue); needFindVariable = false;
             end
 
-            -- 如果新值是基础类型，则不需边历
+            -- 如果新值是基础类型，则不需遍历
             if dataTable.info.stackId ~= nil and tonumber(dataTable.info.stackId) ~= nil and tonumber(dataTable.info.stackId) > 1 then
                 this.curStackId = tonumber(dataTable.info.stackId);
             else
@@ -1356,9 +1356,9 @@ function this.getStackTable( level )
         if info == nil then
             break;
         end
-        if info.source == "=[C]" then
-            break;
-        end
+        -- if info.source == "=[C]" then
+        --     break;
+        -- end
 
         local ss = {};
         ss.file = this.getPath(info);
@@ -2042,7 +2042,7 @@ function this.createWatchedVariableInfo(variableName, variableIns)
     xpcall(function() var.value = tostring(variableIns) end , function() var.value = tostring(type(variableIns)) .. " [value can't trans to string]" end );
     var.variablesReference = "0";  --这个地方必须用“0”， 以免variableRefTab[0]出错
 
-    if var.type == "table" or var.type == "function" then
+    if var.type == "table" or var.type == "function" or var.type == "userdata" then
         var.variablesReference = variableRefIdx;
         variableRefTab[variableRefIdx] = variableIns;
         variableRefIdx = variableRefIdx + 1;
@@ -2292,11 +2292,15 @@ function this.getVariableRef( refStr )
     if tostring(type(variableRefTab[varRef])) == "table" then
         for n,v in pairs(variableRefTab[varRef]) do
             local var = {};
-            var.name = tostring(n);
+            if type(n) == "string" then
+                var.name = '"' .. tostring(n) .. '"';
+            else
+                var.name = tostring(n);
+            end
             var.type = tostring(type(v));
             xpcall(function() var.value = tostring(v) end , function() var.value = tostring(type(v)) .. " [value can't trans to string]" end );
             var.variablesReference = "0";
-            if var.type == "table" or var.type == "function" then
+            if var.type == "table" or var.type == "function" or var.type == "userdata" then
                 var.variablesReference = variableRefIdx;
                 variableRefTab[variableRefIdx] = v;
                 variableRefIdx = variableRefIdx + 1;
@@ -2336,6 +2340,28 @@ function this.getVariableRef( refStr )
             variableRefTab[variableRefIdx] = udMtTable;
             variableRefIdx = variableRefIdx + 1;
             table.insert(varTab, var);
+
+            if udMtTable.__pairs ~= nil and type(udMtTable.__pairs) == "function" then
+                for n,v in pairs(variableRefTab[varRef]) do
+                    local var = {};
+                    var.name = tostring(n);
+                    var.type = tostring(type(v));
+                    xpcall(function() var.value = tostring(v) end , function() var.value = tostring(type(v)) .. " [value can't trans to string]" end );
+                    var.variablesReference = "0";
+                    if var.type == "table" or var.type == "function" or var.type == "userdata" then
+                        var.variablesReference = variableRefIdx;
+                        variableRefTab[variableRefIdx] = v;
+                        variableRefIdx = variableRefIdx + 1;
+                        if var.type == "table" then
+                            local memberNum = this.getTableMemberNum(v);
+                            var.value = memberNum .." Members ".. ( var.value or '' );
+                        end
+                    elseif var.type == "string" then
+                        var.value = '"' ..v.. '"';
+                    end
+                    table.insert(varTab, var);
+                end
+            end
         end
     end
     return varTab;
@@ -2352,7 +2378,7 @@ function this.getGlobalVariable( ... )
         var.type = tostring(type(v));
         xpcall(function() var.value = tostring(v) end , function() var.value =  tostring(type(v)) .." [value can't trans to string]" end );
         var.variablesReference = "0";
-        if var.type == "table" or var.type == "function" then
+        if var.type == "table" or var.type == "function" or var.type == "userdata" then
             var.variablesReference = variableRefIdx;
             variableRefTab[variableRefIdx] = v;
             variableRefIdx = variableRefIdx + 1;
@@ -2395,7 +2421,7 @@ function this.getUpValueVariable( checkFunc , isFormatVariable)
 
         if isGetValue == false then
             xpcall(function() var.value = tostring(v) end , function() var.value = tostring(type(v)) .. " [value can't trans to string]" end );
-            if var.type == "table" or var.type == "function" then
+            if var.type == "table" or var.type == "function" or var.type == "userdata" then
                 var.variablesReference = variableRefIdx;
                 variableRefTab[variableRefIdx] = v;
                 variableRefIdx = variableRefIdx + 1;
@@ -2457,7 +2483,7 @@ function this.getVariable( checkLayer, isFormatVariable , offset)
 
             if isGetValue == false then
                 xpcall(function() var.value = tostring(v) end , function() var.value = tostring(type(v)) .. " [value can't trans to string]" end );
-                if var.type == "table" or var.type == "function" then
+                if var.type == "table" or var.type == "function" or var.type == "userdata" then
                     var.variablesReference = variableRefIdx;
                     variableRefTab[variableRefIdx] = v;
                     variableRefIdx = variableRefIdx + 1;
@@ -2530,7 +2556,7 @@ function this.processExp(msgTable)
     var.type = tostring(type(retString));
     xpcall(function() var.value = tostring(retString) end , function(e) var.value = tostring(type(retString))  .. " [value can't trans to string] ".. e; var.isSuccess = false; end);
     var.variablesReference = "0";
-    if var.type == "table" or var.type == "function" then
+    if var.type == "table" or var.type == "function" or var.type == "userdata" then
         variableRefTab[variableRefIdx] = retString;
         var.variablesReference = variableRefIdx;
         variableRefIdx = variableRefIdx + 1;
@@ -2575,7 +2601,7 @@ function this.processWatchedExp(msgTable)
     xpcall(function() var.value = tostring(retString) end , function() var.value = tostring(type(retString)) .. " [value can't trans to string]"; var.isSuccess = "false"; end );
     var.variablesReference = "0";
 
-    if var.type == "table" or var.type == "function" then
+    if var.type == "table" or var.type == "function" or var.type == "userdata" then
         variableRefTab[variableRefIdx] = retString;
         var.variablesReference = variableRefIdx;
         variableRefIdx = variableRefIdx + 1;

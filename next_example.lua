@@ -19,14 +19,32 @@ local obData = reactive.reactive(data)
 
 obData.actor.aname = "a1"
 obData.actor.aname = "a2"
+
 local w =
 watch(
 function()return obData.actor.aname end,
     function(vm, value, old)
         print(string.format("onValueChanged : %s -> %s", old, value))
     end,
-    {sync = true}
+    {flush = "sync"}
 )
+
+local ff =
+watch(
+function()return obData.actor.ff end,
+    function(vm, value, old)
+        print(string.format("onValueChanged : %s -> %s", old, value))
+    end,
+    {flush = "sync"}
+)
+
+obData.actor.aname = "a3"
+
+obData.actor.aname = nil
+obData.actor.aname = "a4"
+obData.actor.ff = "fff"
+
+obData.actor = {aname = "ffe"}
 
 -- local newActor1 = {aname = "new1", aid = 666}
 -- Observer.observe(newActor1)

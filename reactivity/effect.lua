@@ -5,10 +5,10 @@ local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
 
-local type, ipairs, pairs, tinsert,xpcall = type, ipairs, pairs, table.insert,xpcall
+local type, ipairs, pairs, tinsert,xpcall, tremove, tunpack = type, ipairs, pairs, table.insert,xpcall, table.remove, table.unpack
 
 local reactiveUtils = require("reactivity.reactiveUtils")
-local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction,traceback =
+local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction,traceback,array_includes =
     reactiveUtils.isObject,
     reactiveUtils.hasChanged,
     reactiveUtils.extend,
@@ -16,7 +16,8 @@ local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction,traceback 
     reactiveUtils.NOOP,
     reactiveUtils.EMPTY_OBJ,
     reactiveUtils.isFunction,
-    reactiveUtils.traceback
+    reactiveUtils.traceback,
+    reactiveUtils.array_includes
 
 -- The main WeakMap that stores {target -> key -> dep} connections.
 -- Conceptually, it's easier to think of a dependency as a Dep class
@@ -32,7 +33,7 @@ local trackStack = {}
 local uid = 0
 
 local function isEffect(fn)
-    return fn and fn._isEffect == true
+    return type(fn) == 'table' and fn._isEffect == true
 end
 
 local function pauseTracking()
@@ -46,20 +47,13 @@ local function enableTracking()
 end
 
 local function resetTracking()
-    local last = trackStack:pop()
+    local last = tremove(trackStack)
     shouldTrack = last == nil and true or last
 end
 
 local function cleanup(effect)
-    local deps = {effect}
-    if #deps then
-        local i = 0
-        repeat
-            deps[i + 1]:delete(effect)
-            i = i + 1
-        until not (i < #deps)
-        -- [ts2lua]修改数组长度需要手动处理。
-        deps.length = 0
+    if #effect.deps > 0 then
+        effect.deps = {}
     end
 end
 
@@ -70,21 +64,23 @@ local function createReactiveEffect(fn, options)
             if options.scheduler then
                 return nil
             else
-                return return fn(...)
+                return fn(...)
             end
         end
-        if not effectStack:includes(effect) then
+        if not array_includes(effectStack, effect) then
             cleanup(effect)
-            xpcall(function()
+            local args = {...}
+            local result, ret = xpcall(function()
                     enableTracking()
                     tinsert(effectStack, effect)
                     activeEffect = effect
-                    return fn(...)
+                    return fn(tunpack(args))
                 end, traceback)
-                
-            effectStack:pop()
+               
+            tremove(effectStack)
             resetTracking()
             activeEffect = effectStack[#effectStack - 1]
+            return ret
         end
     end
 
@@ -98,7 +94,7 @@ local function createReactiveEffect(fn, options)
     return effect
 end
 
-local function effect(fn, options)
+local function createEffect(fn, options)
     if options == nil then
         options = EMPTY_OBJ
     end
@@ -155,9 +151,9 @@ local function trigger(target, type, key, newValue, oldValue, oldTarget)
     local effects = {}
     local add = function(effectsToAdd)
         if effectsToAdd then
-            for _, effect in ipairs(effectsToAdd) do
+            for effect in pairs(effectsToAdd) do
                 if effect ~= activeEffect or not shouldTrack then
-                    effects:add(effect)
+                    tinsert(effects, effect)
                 -- the effect mutated its own dependency during its execution.
                 -- this can be caused by operations like foo.value++
                 -- do not trigger or we end in an infinite loop
@@ -209,5 +205,6 @@ return {
     trigger = trigger,
     track = track,
     stop = stop,
+    createEffect = createEffect,
     ITERATOR_KEY = ITERATOR_KEY,
 }

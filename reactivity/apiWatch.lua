@@ -3,7 +3,12 @@ local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local ErrorCodes = require("reactivity.ErrorCodes")
 local effect = require("reactivity.effect")
-local track, trigger, ITERATOR_KEY, stop = effect.track, effect.trigger, effect.ITERATOR_KEY, effect.stop
+local track, trigger, ITERATOR_KEY, stop, createEffect =
+    effect.track,
+    effect.trigger,
+    effect.ITERATOR_KEY,
+    effect.stop,
+    effect.createEffect
 
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
@@ -73,7 +78,16 @@ local function traverse(value, seen)
     return value
 end
 
-local function doWatch(multiSource, source, cb, immediate, deep, flush, onTrack, onTrigger)
+local function doWatch(multiSource, source, cb, options)
+    local immediate, deep, flush, onTrack, onTrigger
+    if options then
+        immediate, deep, flush, onTrack, onTrigger =
+            options.immediate,
+            options.deep,
+            options.flush,
+            options.onTrack,
+            options.onTrigger
+    end
     if __DEV__ and not cb then
         if immediate ~= nil then
             warn(
@@ -121,15 +135,6 @@ local function doWatch(multiSource, source, cb, immediate, deep, flush, onTrack,
             end
             return result
         end
-    elseif isRef(source) then
-        getter = function()
-            return source.value
-        end
-    elseif isReactive(source) then
-        getter = function()
-            return source
-        end
-        deep = true
     elseif isFunction(source) then
         if cb then
             -- getter with cb
@@ -148,6 +153,15 @@ local function doWatch(multiSource, source, cb, immediate, deep, flush, onTrack,
                 return callWithErrorHandling(source, instance, ErrorCodes.WATCH_CALLBACK, onInvalidate)
             end
         end
+    elseif isRef(source) then
+        getter = function()
+            return source.value
+        end
+    elseif isReactive(source) then
+        getter = function()
+            return source
+        end
+        deep = true
     else
         getter = NOOP
         if __DEV__ then
@@ -224,7 +238,7 @@ local function doWatch(multiSource, source, cb, immediate, deep, flush, onTrack,
         end
     end
     runner =
-        effect(
+        createEffect(
         getter,
         {
             lazy = true,
@@ -258,7 +272,7 @@ local function doWatch(multiSource, source, cb, immediate, deep, flush, onTrack,
 end
 
 local function watchEffect(effect, options)
-    return doWatch(effect, nil, options)
+    return doWatch(false, effect, nil, options)
 end
 
 -- overload #1: array of multiple sources + cb
@@ -276,7 +290,7 @@ local function watch(source, cb, options)
       `supports \`watch(source, cb, options?) signature.`]]
         )
     end
-    return doWatch(source, cb, options)
+    return doWatch(false, source, cb, options)
 end
 
 -- this.$watch
@@ -291,6 +305,6 @@ local function instanceWatch(this, source, cb, options)
 end
 
 return {
-    watch = watch
-    , instanceWatch = instanceWatch
+    watch = watch,
+    instanceWatch = instanceWatch
 }

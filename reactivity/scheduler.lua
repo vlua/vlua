@@ -3,7 +3,7 @@ local type, tinsert,tremove, tsort = type, table.insert,table.remove, table.sort
 local __DEV__ = require("reactivity.config").__DEV__
 local ErrorCodes = require("reactivity.ErrorCodes")
 local reactiveUtils = require("reactivity.reactiveUtils")
-local warn, callWithErrorHandling = reactiveUtils.warn, reactiveUtils.callWithErrorHandling
+local warn, callWithErrorHandling, array_includes = reactiveUtils.warn, reactiveUtils.callWithErrorHandling, reactiveUtils.array_includes
 
 local queue = {}
 local postFlushCbs = {}
@@ -11,14 +11,6 @@ local isFlushing = false
 local isFlushPending = false
 local RECURSION_LIMIT = 100
 
-local function queue_includes(t, value)
-    for i, v in ipairs(t) do
-        if v == value then
-            return true
-        end
-    end
-    return false
-end
 
 local getId = function(job)
     return job.id == nil and 0 or job.id
@@ -41,7 +33,7 @@ local function checkRecursiveUpdates(seen, fn)
     end
 end
 
-local function flushPostFlushCbs(seen)
+local function flushPostFlushCbs(seen, ...)
     if #postFlushCbs then
         local cbs = {...}
         postFlushCbs = {}
@@ -50,7 +42,7 @@ local function flushPostFlushCbs(seen)
         end
         for i = 1, #cbs do
             if __DEV__ then
-                checkRecursiveUpdates(cbs[i])
+                checkRecursiveUpdates(seen, cbs[i])
             end
             cbs[i]()
           end
@@ -98,7 +90,7 @@ local function queueFlush()
 end
 
 local function queueJob(job)
-    if not queue_includes(queue, job) then
+    if not array_includes(queue, job) then
         tinsert(queue, job)
         queueFlush()
     end
@@ -111,7 +103,7 @@ local function invalidateJob(job)
     end
 end
 
-local function queuePostFlushCb(cb)
+local function queuePostFlushCb(cb, ...)
     if type(cb) ~= 'table' then
         tinsert(postFlushCbs, cb)
     else

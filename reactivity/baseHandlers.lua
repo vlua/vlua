@@ -8,7 +8,7 @@ local track, trigger, ITERATOR_KEY = effect.track, effect.trigger, effect.ITERAT
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
 
-local type, ipairs, pairs = type, ipairs, pairs
+local type, ipairs, pairs, setmetatable = type, ipairs, pairs, setmetatable
 
 local reactiveUtils = require("reactivity.reactiveUtils")
 local isObject, hasChanged, extend, warn =
@@ -20,7 +20,7 @@ local isObject, hasChanged, extend, warn =
 return function(Reactive)
     local ref = require("reactivity.ref")(Reactive)
     local isRef = ref.isRef
-    
+
     local function createGetter(isReadonly, shallow)
         if isReadonly == nil then
             isReadonly = false
@@ -154,6 +154,36 @@ return function(Reactive)
     local shallowReactiveHandlers = extend({}, mutableHandlers, {get = shallowGet, set = shallowSet})
     local shallowReadonlyHandlers = extend({}, readonlyHandlers, {get = shallowReadonlyGet})
 
+    local function createProxy(target, handlers)
+        local proxy = {}
+
+        local mt = {
+            __index = function(self, key)
+                return handlers.get(target, key, self)
+            end,
+            __newindex = function(self, key, value)
+                if value ~= nil then
+                    handlers.set(target, key, value, self)
+                else
+                    handlers.del(target, key, self)
+                end
+            end,
+            __pairs = function(self)
+                handlers.iterator(target)
+                return pairs(target)
+            end,
+            __ipairs = function(self)
+                handlers.iterator(target)
+                return ipairs(target)
+            end,
+            __len = function(self)
+                handlers.iterator(target)
+                return #target
+            end
+        }
+        return setmetatable(proxy, mt)
+    end
+
     return {
         get = get,
         shallowGet = shallowGet,
@@ -167,6 +197,7 @@ return function(Reactive)
         mutableHandlers = mutableHandlers,
         readonlyHandlers = readonlyHandlers,
         shallowReactiveHandlers = shallowReactiveHandlers,
-        shallowReadonlyHandlers = shallowReadonlyHandlers
+        shallowReadonlyHandlers = shallowReadonlyHandlers,
+        createProxy = createProxy
     }
 end

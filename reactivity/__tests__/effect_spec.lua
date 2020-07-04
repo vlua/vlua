@@ -1,16 +1,13 @@
-require("reactivity/src/index")
-require("reactivity/src/index/TrackOpTypes")
-require("reactivity/src/index/TriggerOpTypes")
-require("reactivity/src/effect")
+local lu = require("test.luaunit")
+local effect = require("reactivity.effect").effect
+local Reactive = require("reactivity.reactive")
+local reactive, toRaw = Reactive.reactive, Reactive.toRaw
 
 describe('reactivity/effect', function()
   it('should run the passed function once (wrapped by a effect)', function()
-    local fnSpy = jest:fn(function()
-      
-    end
-    )
+  local fnSpy = lu.createSpy(function()end)
     effect(fnSpy)
-    expect(fnSpy):toHaveBeenCalledTimes(1)
+    lu.assertEquals(#fnSpy.calls, 1)
   end
   )
   it('should observe basic properties', function()
@@ -20,9 +17,9 @@ describe('reactivity/effect', function()
       dummy = counter.num
     end
     )
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     counter.num = 7
-    expect(dummy):toBe(7)
+    lu.assertEquals(dummy, 7)
   end
   )
   it('should observe multiple properties', function()
@@ -32,10 +29,10 @@ describe('reactivity/effect', function()
       dummy = counter.num1 + counter.num1 + counter.num2
     end
     )
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     counter.num2 = 7
     counter.num1 = counter.num2
-    expect(dummy):toBe(21)
+    lu.assertEquals(dummy, 21)
   end
   )
   it('should handle multiple effects', function()
@@ -50,11 +47,11 @@ describe('reactivity/effect', function()
       dummy2 = counter.num
     end
     )
-    expect(dummy1):toBe(0)
-    expect(dummy2):toBe(0)
+    lu.assertEquals(dummy1, 0)
+    lu.assertEquals(dummy2, 0)
     counter.num=counter.num+1
-    expect(dummy1):toBe(1)
-    expect(dummy2):toBe(1)
+    lu.assertEquals(dummy1, 1)
+    lu.assertEquals(dummy2, 1)
   end
   )
   it('should observe nested properties', function()
@@ -64,9 +61,9 @@ describe('reactivity/effect', function()
       dummy = counter.nested.num
     end
     )
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     counter.nested.num = 8
-    expect(dummy):toBe(8)
+    lu.assertEquals(dummy, 8)
   end
   )
   it('should observe delete operations', function()
@@ -76,41 +73,46 @@ describe('reactivity/effect', function()
       dummy = obj.prop
     end
     )
-    expect(dummy):toBe('value')
+    lu.assertEquals(dummy, 'value')
     obj.prop = nil
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
   end
   )
   it('should observe has operations', function()
     local dummy = nil
     local obj = reactive({prop='value'})
     effect(function()
-      dummy = obj['prop']
+      dummy = obj['prop'] ~= nil
     end
     )
-    expect(dummy):toBe(true)
+    lu.assertEquals(dummy, true)
     obj.prop = nil
-    expect(dummy):toBe(false)
+    lu.assertEquals(dummy, false)
     obj.prop = 12
-    expect(dummy):toBe(true)
+    lu.assertEquals(dummy, true)
   end
   )
   it('should observe properties on the prototype chain', function()
     local dummy = nil
     local counter = reactive({num=0})
     local parentCounter = reactive({num=2})
-    Object:setPrototypeOf(counter, parentCounter)
+
+    setmetatable(toRaw(counter), {__index = function(self, key)
+      return parentCounter[key]
+    end})
+
+    -- Object:setPrototypeOf(counter, parentCounter)
     effect(function()
       dummy = counter.num
     end
     )
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     counter.num = nil
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
     parentCounter.num = 4
-    expect(dummy):toBe(4)
+    lu.assertEquals(dummy, 4)
     counter.num = 3
-    expect(dummy):toBe(3)
+    lu.assertEquals(dummy, 3)
   end
   )
   it('should observe has operations on the prototype chain', function()
@@ -122,13 +124,13 @@ describe('reactivity/effect', function()
       dummy = counter['num']
     end
     )
-    expect(dummy):toBe(true)
+    lu.assertEquals(dummy, true)
     counter.num = nil
-    expect(dummy):toBe(true)
+    lu.assertEquals(dummy, true)
     parentCounter.num = nil
-    expect(dummy):toBe(false)
+    lu.assertEquals(dummy, false)
     counter.num = 3
-    expect(dummy):toBe(true)
+    lu.assertEquals(dummy, true)
   end
   )
   it('should observe inherited property accessors', function()
@@ -152,29 +154,30 @@ describe('reactivity/effect', function()
       parentDummy = parent.prop
     end
     )
-    expect(dummy):toBe(undefined)
-    expect(parentDummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
+    lu.assertEquals(parentDummy, nil)
     obj.prop = 4
-    expect(dummy):toBe(4)
+    lu.assertEquals(dummy, 4)
     parent.prop = 2
-    expect(dummy):toBe(2)
-    expect(parentDummy):toBe(2)
+    lu.assertEquals(dummy, 2)
+    lu.assertEquals(parentDummy, 2)
   end
   )
   it('should observe function call chains', function()
     local dummy = nil
     local counter = reactive({num=0})
+    
+    local function getNum()
+      return counter.num
+    end
     effect(function()
       dummy = getNum()
     end
     )
-    function getNum()
-      return counter.num
-    end
     
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     counter.num = 2
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
   end
   )
   it('should observe iteration', function()
@@ -184,11 +187,11 @@ describe('reactivity/effect', function()
       dummy = list:join(' ')
     end
     )
-    expect(dummy):toBe('Hello')
+    lu.assertEquals(dummy, 'Hello')
     table.insert(list, 'World!')
-    expect(dummy):toBe('Hello World!')
+    lu.assertEquals(dummy, 'Hello World!')
     list:shift()
-    expect(dummy):toBe('World!')
+    lu.assertEquals(dummy, 'World!')
   end
   )
   it('should observe implicit array length changes', function()
@@ -198,11 +201,11 @@ describe('reactivity/effect', function()
       dummy = list:join(' ')
     end
     )
-    expect(dummy):toBe('Hello')
+    lu.assertEquals(dummy, 'Hello')
     list[1+1] = 'World!'
-    expect(dummy):toBe('Hello World!')
+    lu.assertEquals(dummy, 'Hello World!')
     list[3+1] = 'Hello!'
-    expect(dummy):toBe('Hello World!  Hello!')
+    lu.assertEquals(dummy, 'Hello World!  Hello!')
   end
   )
   it('should observe sparse array mutations', function()
@@ -213,11 +216,11 @@ describe('reactivity/effect', function()
       dummy = list:join(' ')
     end
     )
-    expect(dummy):toBe(' World!')
+    lu.assertEquals(dummy, ' World!')
     list[0+1] = 'Hello'
-    expect(dummy):toBe('Hello World!')
+    lu.assertEquals(dummy, 'Hello World!')
     list:pop()
-    expect(dummy):toBe('Hello')
+    lu.assertEquals(dummy, 'Hello')
   end
   )
   it('should observe enumeration', function()
@@ -231,11 +234,11 @@ describe('reactivity/effect', function()
       end
     end
     )
-    expect(dummy):toBe(3)
+    lu.assertEquals(dummy, 3)
     numbers.num2 = 4
-    expect(dummy):toBe(7)
+    lu.assertEquals(dummy, 7)
     numbers.num1 = nil
-    expect(dummy):toBe(4)
+    lu.assertEquals(dummy, 4)
   end
   )
   it('should observe symbol keyed properties', function()
@@ -252,14 +255,14 @@ describe('reactivity/effect', function()
       hasDummy = obj[key]
     end
     )
-    expect(dummy):toBe('value')
+    lu.assertEquals(dummy, 'value')
     expect(hasDummy):toBe(true)
     -- [ts2lua]obj下标访问可能不正确
     obj[key] = 'newValue'
-    expect(dummy):toBe('newValue')
+    lu.assertEquals(dummy, 'newValue')
     -- [ts2lua]obj下标访问可能不正确
     obj[key] = nil
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
     expect(hasDummy):toBe(false)
   end
   )
@@ -273,13 +276,13 @@ describe('reactivity/effect', function()
     end
     )
     -- [ts2lua]array下标访问可能不正确
-    expect(array[key]):toBe(undefined)
-    expect(dummy):toBe(undefined)
+    expect(array[key]):toBe(nil)
+    lu.assertEquals(dummy, nil)
     -- [ts2lua]array下标访问可能不正确
     array[key] = true
     -- [ts2lua]array下标访问可能不正确
     expect(array[key]):toBe(true)
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
   end
   )
   it('should observe function valued properties', function()
@@ -297,9 +300,9 @@ describe('reactivity/effect', function()
       dummy = obj.func
     end
     )
-    expect(dummy):toBe(oldFunc)
+    lu.assertEquals(dummy, oldFunc)
     obj.func = newFunc
-    expect(dummy):toBe(newFunc)
+    lu.assertEquals(dummy, newFunc)
   end
   )
   it('should observe chained getters relying on this', function()
@@ -312,9 +315,9 @@ describe('reactivity/effect', function()
       dummy = obj.b
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     obj.a=obj.a+1
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
   end
   )
   it('should observe methods relying on this', function()
@@ -327,9 +330,9 @@ describe('reactivity/effect', function()
       dummy = obj:b()
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     obj.a=obj.a+1
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
   end
   )
   it('should not observe set operations without a value change', function()
@@ -362,9 +365,9 @@ describe('reactivity/effect', function()
       dummy = toRaw(obj).prop
     end
     )
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
     obj.prop = 'value'
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
   end
   )
   it('should not be triggered by raw mutations', function()
@@ -374,9 +377,9 @@ describe('reactivity/effect', function()
       dummy = obj.prop
     end
     )
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
     toRaw(obj).prop = 'value'
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
   end
   )
   it('should not be triggered by inherited raw setters', function()
@@ -400,11 +403,11 @@ describe('reactivity/effect', function()
       parentDummy = parent.prop
     end
     )
-    expect(dummy):toBe(undefined)
-    expect(parentDummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
+    lu.assertEquals(parentDummy, nil)
     toRaw(obj).prop = 4
-    expect(dummy):toBe(undefined)
-    expect(parentDummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
+    lu.assertEquals(parentDummy, nil)
   end
   )
   it('should avoid implicit infinite recursive loops with itself', function()
@@ -485,16 +488,16 @@ describe('reactivity/effect', function()
     end
     )
     effect(conditionalSpy)
-    expect(dummy):toBe('other')
+    lu.assertEquals(dummy, 'other')
     expect(conditionalSpy):toHaveBeenCalledTimes(1)
     obj.prop = 'Hi'
-    expect(dummy):toBe('other')
+    lu.assertEquals(dummy, 'other')
     expect(conditionalSpy):toHaveBeenCalledTimes(1)
     obj.run = true
-    expect(dummy):toBe('Hi')
+    lu.assertEquals(dummy, 'Hi')
     expect(conditionalSpy):toHaveBeenCalledTimes(2)
     obj.prop = 'World'
-    expect(dummy):toBe('World')
+    lu.assertEquals(dummy, 'World')
     expect(conditionalSpy):toHaveBeenCalledTimes(3)
   end
   )
@@ -507,14 +510,14 @@ describe('reactivity/effect', function()
       dummy = (run and {obj.prop} or {'other'})[1]
     end
     )
-    expect(dummy):toBe('other')
+    lu.assertEquals(dummy, 'other')
     runner()
-    expect(dummy):toBe('other')
+    lu.assertEquals(dummy, 'other')
     run = true
     runner()
-    expect(dummy):toBe('value')
+    lu.assertEquals(dummy, 'value')
     obj.prop = 'World'
-    expect(dummy):toBe('World')
+    lu.assertEquals(dummy, 'World')
   end
   )
   it('should not be triggered by mutating a property, which is used in an inactive branch', function()
@@ -526,13 +529,13 @@ describe('reactivity/effect', function()
     end
     )
     effect(conditionalSpy)
-    expect(dummy):toBe('value')
+    lu.assertEquals(dummy, 'value')
     expect(conditionalSpy):toHaveBeenCalledTimes(1)
     obj.run = false
-    expect(dummy):toBe('other')
+    lu.assertEquals(dummy, 'other')
     expect(conditionalSpy):toHaveBeenCalledTimes(2)
     obj.prop = 'value2'
-    expect(dummy):toBe('other')
+    lu.assertEquals(dummy, 'other')
     expect(conditionalSpy):toHaveBeenCalledTimes(2)
   end
   )
@@ -560,7 +563,7 @@ describe('reactivity/effect', function()
     effect(fnSpy)
     expect(fnSpy):toHaveBeenCalledTimes(1)
     obj.prop = 16
-    expect(dummy):toBe(16)
+    lu.assertEquals(dummy, 16)
     expect(fnSpy):toHaveBeenCalledTimes(2)
   end
   )
@@ -624,9 +627,9 @@ describe('reactivity/effect', function()
       dummy = model.count
     end
     )
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     model:inc()
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
   end
   )
   it('lazy', function()
@@ -636,11 +639,11 @@ describe('reactivity/effect', function()
       dummy = obj.foo
     end
     , {lazy=true})
-    expect(dummy):toBe(undefined)
+    lu.assertEquals(dummy, nil)
     expect(runner()):toBe(1)
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     obj.foo = 2
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
   end
   )
   it('scheduler', function()
@@ -656,12 +659,12 @@ describe('reactivity/effect', function()
     end
     , {scheduler=scheduler})
     expect(scheduler).tsvar_not:toHaveBeenCalled()
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     obj.foo=obj.foo+1
     expect(scheduler):toHaveBeenCalledTimes(1)
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     runner()
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
   end
   )
   it('events: onTrack', function()
@@ -696,7 +699,7 @@ describe('reactivity/effect', function()
     end
     , {onTrigger=onTrigger})
     obj.foo=obj.foo+1
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
     expect(onTrigger):toHaveBeenCalledTimes(1)
     expect(events[0+1]):toEqual({effect=runner, target=toRaw(obj), type=TriggerOpTypes.SET, key='foo', oldValue=1, newValue=2})
     obj.foo = nil
@@ -713,12 +716,12 @@ describe('reactivity/effect', function()
     end
     )
     obj.prop = 2
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
     stop(runner)
     obj.prop = 3
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
     runner()
-    expect(dummy):toBe(3)
+    lu.assertEquals(dummy, 3)
   end
   )
   it('stop with scheduler', function()
@@ -733,14 +736,14 @@ describe('reactivity/effect', function()
     end
     })
     obj.prop = 2
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     expect(#queue):toBe(1)
     stop(runner)
     queue:forEach(function(e)
       e()
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
   end
   )
   it('events: onStop', function()
@@ -762,14 +765,14 @@ describe('reactivity/effect', function()
     )
     stop(runner)
     obj.prop = 2
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     effect(function()
       runner()
     end
     )
-    expect(dummy):toBe(2)
+    lu.assertEquals(dummy, 2)
     obj.prop = 3
-    expect(dummy):toBe(3)
+    lu.assertEquals(dummy, 3)
   end
   )
   it('markRaw', function()
@@ -779,17 +782,17 @@ describe('reactivity/effect', function()
       dummy = obj.foo.prop
     end
     )
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     obj.foo.prop=obj.foo.prop+1
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     obj.foo = {prop=1}
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
   end
   )
   it('should not be trigger when the value and the old value both are NaN', function()
     local obj = reactive({foo=NaN})
     local fnSpy = jest:fn(function()
-      obj.foo
+      return obj.foo
     end
     )
     effect(fnSpy)
@@ -810,16 +813,16 @@ describe('reactivity/effect', function()
       record = observed[0+1]
     end
     )
-    expect(dummy):toBe(1)
+    lu.assertEquals(dummy, 1)
     expect(record):toBe(1)
     observed[1+1] = 2
     expect(observed[1+1]):toBe(2)
     observed:unshift(3)
-    expect(dummy):toBe(3)
+    lu.assertEquals(dummy, 3)
     expect(record):toBe(3)
     -- [ts2lua]修改数组长度需要手动处理。
     observed.length = 0
-    expect(dummy):toBe(0)
+    lu.assertEquals(dummy, 0)
     expect(record):toBeUndefined()
   end
   )

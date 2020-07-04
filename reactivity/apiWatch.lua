@@ -2,13 +2,13 @@ local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local ErrorCodes = require("reactivity.ErrorCodes")
-local effect = require("reactivity.effect")
-local track, trigger, ITERATOR_KEY, stop, createEffect =
-    effect.track,
-    effect.trigger,
-    effect.ITERATOR_KEY,
-    effect.stop,
-    effect.createEffect
+local Effect = require("reactivity.effect")
+local track, trigger, ITERATOR_KEY, stop, effect =
+    Effect.track,
+    Effect.trigger,
+    Effect.ITERATOR_KEY,
+    Effect.stop,
+    Effect.effect
 
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
@@ -238,7 +238,7 @@ local function doWatch(multiSource, source, cb, options)
         end
     end
     runner =
-        createEffect(
+        effect(
         getter,
         {
             lazy = true,

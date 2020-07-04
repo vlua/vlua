@@ -94,7 +94,7 @@ local function createReactiveEffect(fn, options)
     return effect
 end
 
-local function createEffect(fn, options)
+local function effect(fn, options)
     if options == nil then
         options = EMPTY_OBJ
     end
@@ -196,7 +196,7 @@ local function trigger(target, type, key, newValue, oldValue, oldTarget)
         if effect.options.scheduler then
             effect.options:scheduler(effect)
         else
-            effect()
+            effect.run()
         end
     end
 end
@@ -205,6 +205,6 @@ return {
     trigger = trigger,
     track = track,
     stop = stop,
-    createEffect = createEffect,
+    effect = effect,
     ITERATOR_KEY = ITERATOR_KEY,
 }

@@ -21,7 +21,7 @@ local isObject, hasChanged, extend, warn, NOOP, isFunction =
 
 return function(Reactive)
     local function isRef(r)
-        if r and r.__v_isRef == true then
+        if type(r) == 'table' and r.__v_isRef == true then
             return true
         else
             return false

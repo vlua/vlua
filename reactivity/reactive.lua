@@ -35,7 +35,7 @@ local mutableHandlers, shallowReactiveHandlers, readonlyHandlers, shallowReadonl
     baseHandlers.createProxy
 
 local function toRaw(observed)
-    return observed and toRaw(observed[ReactiveFlags.RAW]) or observed
+    return type(observed) == 'table' and toRaw(observed[ReactiveFlags.RAW]) or observed
 end
 
 local canObserve = function(value)

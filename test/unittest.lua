@@ -1,5 +1,6 @@
 package.path = package.path .. ";luaexe/?.lua"
 require("LuaPanda").start("127.0.0.1", 8818)
+---@type luaunit
 local lu = require("test.luaunit")
 local util = require('vlua.util')
 
@@ -121,16 +122,21 @@ local function mainLoop()
     end
 end
 
-function lu.createSpy(name)
+function lu.createSpy(nameOrFn)
+    local name = tostring(nameOrFn)
     ---@class Spy
     local spy = {}
     spy.__name = name
+    spy.__fn = type(nameOrFn) == 'function' and nameOrFn or nil
     spy.calls = {}
     spy.call = function(...)
         table.insert(spy.calls, {...})
+        if spy.__fn then
+            return spy.__fn(...)
+        end
     end
     spy.__call = function(_, ...)
-        spy.call(...)
+        return spy.call(...)
     end
 
     local function checkCall(idx, ...)

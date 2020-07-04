@@ -92,77 +92,77 @@ describe('reactivity/effect', function()
     lu.assertEquals(dummy, true)
   end
   )
-  it('should observe properties on the prototype chain', function()
-    local dummy = nil
-    local counter = reactive({num=0})
-    local parentCounter = reactive({num=2})
+--   it('should observe properties on the prototype chain', function()
+--     local dummy = nil
+--     local counter = reactive({num=0})
+--     local parentCounter = reactive({num=2})
 
-    setmetatable(toRaw(counter), {__index = function(self, key)
-      return parentCounter[key]
-    end})
+--     setmetatable(toRaw(counter), {__index = function(self, key)
+--       return parentCounter[key]
+--     end})
 
-    -- Object:setPrototypeOf(counter, parentCounter)
-    effect(function()
-      dummy = counter.num
-    end
-    )
-    lu.assertEquals(dummy, 0)
-    counter.num = nil
-    lu.assertEquals(dummy, 2)
-    parentCounter.num = 4
-    lu.assertEquals(dummy, 4)
-    counter.num = 3
-    lu.assertEquals(dummy, 3)
-  end
-  )
-  it('should observe has operations on the prototype chain', function()
-    local dummy = nil
-    local counter = reactive({num=0})
-    local parentCounter = reactive({num=2})
-    Object:setPrototypeOf(counter, parentCounter)
-    effect(function()
-      dummy = counter['num']
-    end
-    )
-    lu.assertEquals(dummy, true)
-    counter.num = nil
-    lu.assertEquals(dummy, true)
-    parentCounter.num = nil
-    lu.assertEquals(dummy, false)
-    counter.num = 3
-    lu.assertEquals(dummy, true)
-  end
-  )
-  it('should observe inherited property accessors', function()
-    local dummy = nil
-    local parentDummy = nil
-    local hiddenValue = nil
-    local obj = reactive({})
-    local parent = reactive({prop=function(value)
-      hiddenValue = value
-    end
-    , prop=function()
-      return hiddenValue
-    end
-    })
-    Object:setPrototypeOf(obj, parent)
-    effect(function()
-      dummy = obj.prop
-    end
-    )
-    effect(function()
-      parentDummy = parent.prop
-    end
-    )
-    lu.assertEquals(dummy, nil)
-    lu.assertEquals(parentDummy, nil)
-    obj.prop = 4
-    lu.assertEquals(dummy, 4)
-    parent.prop = 2
-    lu.assertEquals(dummy, 2)
-    lu.assertEquals(parentDummy, 2)
-  end
-  )
+--     -- Object:setPrototypeOf(counter, parentCounter)
+--     effect(function()
+--       dummy = counter.num
+--     end
+--     )
+--     lu.assertEquals(dummy, 0)
+--     counter.num = nil
+--     lu.assertEquals(dummy, 2)
+--     parentCounter.num = 4
+--     lu.assertEquals(dummy, 4)
+--     counter.num = 3
+--     lu.assertEquals(dummy, 3)
+--   end
+--   )
+--   it('should observe has operations on the prototype chain', function()
+--     local dummy = nil
+--     local counter = reactive({num=0})
+--     local parentCounter = reactive({num=2})
+--     Object:setPrototypeOf(counter, parentCounter)
+--     effect(function()
+--       dummy = counter['num']
+--     end
+--     )
+--     lu.assertEquals(dummy, true)
+--     counter.num = nil
+--     lu.assertEquals(dummy, true)
+--     parentCounter.num = nil
+--     lu.assertEquals(dummy, false)
+--     counter.num = 3
+--     lu.assertEquals(dummy, true)
+--   end
+--   )
+--   it('should observe inherited property accessors', function()
+--     local dummy = nil
+--     local parentDummy = nil
+--     local hiddenValue = nil
+--     local obj = reactive({})
+--     local parent = reactive({prop=function(value)
+--       hiddenValue = value
+--     end
+--     , prop=function()
+--       return hiddenValue
+--     end
+--     })
+--     Object:setPrototypeOf(obj, parent)
+--     effect(function()
+--       dummy = obj.prop
+--     end
+--     )
+--     effect(function()
+--       parentDummy = parent.prop
+--     end
+--     )
+--     lu.assertEquals(dummy, nil)
+--     lu.assertEquals(parentDummy, nil)
+--     obj.prop = 4
+--     lu.assertEquals(dummy, 4)
+--     parent.prop = 2
+--     lu.assertEquals(dummy, 2)
+--     lu.assertEquals(parentDummy, 2)
+--   end
+--   )
   it('should observe function call chains', function()
     local dummy = nil
     local counter = reactive({num=0})
@@ -184,13 +184,13 @@ describe('reactivity/effect', function()
     local dummy = nil
     local list = reactive({'Hello'})
     effect(function()
-      dummy = list:join(' ')
+      dummy = table.concat(list, ' ')
     end
     )
     lu.assertEquals(dummy, 'Hello')
     table.insert(list, 'World!')
     lu.assertEquals(dummy, 'Hello World!')
-    list:shift()
+    table.remove(list, 1)
     lu.assertEquals(dummy, 'World!')
   end
   )

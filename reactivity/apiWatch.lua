@@ -1,4 +1,3 @@
-local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local ErrorCodes = require("reactivity.ErrorCodes")

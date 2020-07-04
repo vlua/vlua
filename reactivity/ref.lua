@@ -5,10 +5,12 @@ local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local effect = require("reactivity.effect")
 local track, trigger, IPAIR_KEY, PAIR_KEY = effect.track, effect.trigger, effect.IPAIR_KEY, effect.PAIR_KEY
 
+local V_GETTER, V_SETTER, IS_REF = ReactiveFlags.V_GETTER, ReactiveFlags.V_SETTER, ReactiveFlags.IS_REF
+
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
 
-local type, ipairs, pairs = type, ipairs, pairs
+local type, ipairs, pairs, setmetatable, assert = type, ipairs, pairs, setmetatable, assert
 
 local reactiveUtils = require("reactivity.reactiveUtils")
 local isObject, hasChanged, extend, warn, NOOP, isFunction =
@@ -21,58 +23,82 @@ local isObject, hasChanged, extend, warn, NOOP, isFunction =
 
 return function(Reactive)
     local function isRef(r)
-        if type(r) == 'table' and r.__v_isRef == true then
+        if type(r) == "table" and r[IS_REF] == true then
             return true
         else
             return false
         end
     end
 
-    local RefSymbol = nil
-    local convert = function(val)
-        if isObject(val) then
-            return Reactive.reactive(val)
-        else
-            return val
+    local function createRef(value, isReadonly, shallow)
+        if isRef(value) then
+            return value
         end
-    end
 
-    local function createRef(rawValue, shallow)
-        if shallow == nil then
-            shallow = false
+        value = shallow and value or Reactive.reactive(value)
+
+        local refObject
+        local function getter(self)
+            track(refObject, TrackOpTypes.GET, "value")
+            return value
         end
-        if isRef(rawValue) then
-            return rawValue
-        end
-        local value = shallow and rawValue or convert(rawValue)
-        local r
-        r = {
-            __v_isRef = true,
-            value = function()
-                track(r, TrackOpTypes.GET, "value")
-                return value
-            end,
-            value = function(newVal)
-                if hasChanged(Reactive.toRaw(newVal), rawValue) then
-                    rawValue = newVal
-                    value = (shallow and {newVal} or {convert(newVal)})[1]
-                    trigger(r, TriggerOpTypes.SET, "value", __DEV__ and {newValue = newVal} or nil)
+
+        local setter
+        if isReadonly then
+            setter = function(self)
+                warn("readonly ref value")
+            end
+        else
+            setter = function(self, newValue)
+                if newValue == value then
+                    return
                 end
+                local oldValue = value
+
+                value = shallow and newValue or Reactive.reactive(newValue)
+                trigger(refObject, TriggerOpTypes.SET, "value", value, oldValue)
+            end
+        end
+
+        local RefMetatable = {
+            __index = function(self, key)
+                assert(key == "value", 'only access Ref getter with "value" key')
+                return getter()
+            end,
+            __newindex = function(self, key, newValue)
+                assert(key == "value", 'only access Ref setter with "value" key')
+                setter(self, newValue)
             end
         }
-        return r
+        refObject = {
+            [V_GETTER] = getter,
+            [V_SETTER] = setter,
+            [IS_REF] = true
+        }
+        setmetatable(refObject, RefMetatable)
+        return refObject
     end
 
     local function ref(value)
-        return createRef(value)
+        return createRef(value, false, false)
     end
 
     local function shallowRef(value)
+        return createRef(value, false, true)
+    end
+
+
+    local function readonlyShallowRef(value)
+        return createRef(value, true, true)
+    end
+
+    local function readonlyRef(value)
         return createRef(value, true)
     end
 
     local function triggerRef(ref)
-        trigger(ref, TriggerOpTypes.SET, "value", __DEV__ and {newValue = ref.value} or nil)
+        local value = ref.value
+        trigger(ref, TriggerOpTypes.SET, "value", value, value)
     end
 
     local function unref(ref)
@@ -83,59 +109,13 @@ return function(Reactive)
         end
     end
 
-    local function customRef(factory)
-        local r
-        local get, set =
-            factory(
-            function()
-                track(r, TrackOpTypes.GET, "value")
-            end,
-            function()
-                trigger(r, TriggerOpTypes.SET, "value")
-            end
-        )
-        r = {
-            __v_isRef = true,
-            value = function()
-                return get()
-            end,
-            value = function(v)
-                set(v)
-            end
-        }
-        return r
-    end
-
-    local function toRef(object, key)
-        return {
-            __v_isRef = true,
-            value = function()
-                return object[key]
-            end,
-            value = function(newVal)
-                object[key] = newVal
-            end
-        }
-    end
-
-    local function toRefs(object)
-        if __DEV__ and not Reactive.isProxy(object) then
-            warn("cannot toRefs from a non proxy object")
-        end
-        local ret = {}
-        for key in pairs(object) do
-            ret[key] = toRef(object, key)
-        end
-        return ret
-    end
-
     return {
         isRef = isRef,
-        toRef = toRef,
         ref = ref,
         shallowRef = shallowRef,
+        readonlyRef = readonlyRef,
+        readonlyShallowRef = readonlyShallowRef,
         triggerRef = triggerRef,
         unref = unref,
-        customRef = customRef
     }
 end

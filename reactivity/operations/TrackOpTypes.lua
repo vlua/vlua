@@ -1,5 +1,6 @@
-TrackOpTypes = {
-  GET = 'get',
-  HAS = 'has',
-  ITERATE = 'iterate'
+local TrackOpTypes = {
+    GET = "get",
+    HAS = "has",
+    ITERATOR = "iterator",
 }
+return TrackOpTypes

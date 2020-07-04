@@ -1,178 +1,223 @@
-require("trycatch")
-require("reactivity/src/operations/TriggerOpTypes")
-require("@vue/shared")
+local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
+local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
+local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 
-local targetMap = WeakMap()
+local config = require("reactivity.config")
+local __DEV__ = config.__DEV__
+
+local type, ipairs, pairs, tinsert,xpcall = type, ipairs, pairs, table.insert,xpcall
+
+local reactiveUtils = require("reactivity.reactiveUtils")
+local isObject, hasChanged, extend, warn, NOOP, EMPTY_OBJ, isFunction,traceback =
+    reactiveUtils.isObject,
+    reactiveUtils.hasChanged,
+    reactiveUtils.extend,
+    reactiveUtils.warn,
+    reactiveUtils.NOOP,
+    reactiveUtils.EMPTY_OBJ,
+    reactiveUtils.isFunction,
+    reactiveUtils.traceback
+
+-- The main WeakMap that stores {target -> key -> dep} connections.
+-- Conceptually, it's easier to think of a dependency as a Dep class
+-- which maintains a Set of subscribers, but we simply store them as
+-- raw Sets to reduce memory overhead.
+local targetMap = setmetatable({}, {__mode = "k"})
+
 local effectStack = {}
 local activeEffect = nil
--- [ts2lua]lua中0和空字符串也是true，此处__DEV__需要确认
-local ITERATE_KEY = Symbol((__DEV__ and {'iterate'} or {''})[1])
--- [ts2lua]lua中0和空字符串也是true，此处__DEV__需要确认
-local MAP_KEY_ITERATE_KEY = Symbol((__DEV__ and {'Map key iterate'} or {''})[1])
-function isEffect(fn)
-  return fn and fn._isEffect == true
-end
-
-function effect(fn, options)
-  if options == nil then
-    options=EMPTY_OBJ
-  end
-  if isEffect(fn) then
-    fn = fn.raw
-  end
-  local effect = createReactiveEffect(fn, options)
-  if not options.lazy then
-    effect()
-  end
-  return effect
-end
-
-function stop(effect)
-  if effect.active then
-    cleanup(effect)
-    if effect.options.onStop then
-      effect.options:onStop()
-    end
-    effect.active = false
-  end
-end
-
-local uid = 0
-function createReactiveEffect(fn, options)
-  local effect = function reactiveEffect(...)
-    if not effect.active then
-      -- [ts2lua]lua中0和空字符串也是true，此处options.scheduler需要确认
-      return (options.scheduler and {undefined} or {fn(...)})[1]
-    end
-    if not effectStack:includes(effect) then
-      cleanup(effect)
-      try_catch{
-        main = function()
-          enableTracking()
-          table.insert(effectStack, effect)
-          activeEffect = effect
-          return fn(...)
-        end,
-        finally = function()
-          effectStack:pop()
-          resetTracking()
-          -- [ts2lua]effectStack下标访问可能不正确
-          activeEffect = effectStack[#effectStack - 1]
-        end
-      }
-    end
-  end
-  
-  effect.id = uid=uid+1
-  effect._isEffect = true
-  effect.active = true
-  effect.raw = fn
-  effect.deps = {}
-  effect.options = options
-  return effect
-end
-
-function cleanup(effect)
-  local  = effect
-  if #deps then
-    local i = 0
-    repeat
-      deps[i+1]:delete(effect)
-      i=i+1
-    until not(i < #deps)
-    -- [ts2lua]修改数组长度需要手动处理。
-    deps.length = 0
-  end
-end
-
+local ITERATOR_KEY = "iterator"
 local shouldTrack = true
 local trackStack = {}
-function pauseTracking()
-  table.insert(trackStack, shouldTrack)
-  shouldTrack = false
+local uid = 0
+
+local function isEffect(fn)
+    return fn and fn._isEffect == true
 end
 
-function enableTracking()
-  table.insert(trackStack, shouldTrack)
-  shouldTrack = true
+local function pauseTracking()
+    tinsert(trackStack, shouldTrack)
+    shouldTrack = false
 end
 
-function resetTracking()
-  local last = trackStack:pop()
-  -- [ts2lua]lua中0和空字符串也是true，此处last == undefined需要确认
-  shouldTrack = (last == undefined and {true} or {last})[1]
+local function enableTracking()
+    tinsert(trackStack, shouldTrack)
+    shouldTrack = true
 end
 
-function track(target, type, key)
-  if not shouldTrack or activeEffect == undefined then
-    return
-  end
-  local depsMap = targetMap:get(target)
-  if not depsMap then
-    targetMap:set(target, depsMap)
-  end
-  local dep = depsMap:get(key)
-  if not dep then
-    depsMap:set(key, dep)
-  end
-  if not dep:has(activeEffect) then
-    dep:add(activeEffect)
-    table.insert(activeEffect.deps, dep)
-    if __DEV__ and activeEffect.options.onTrack then
-      activeEffect.options:onTrack({effect=activeEffect, target=target, type=type, key=key})
+local function resetTracking()
+    local last = trackStack:pop()
+    shouldTrack = last == nil and true or last
+end
+
+local function cleanup(effect)
+    local deps = {effect}
+    if #deps then
+        local i = 0
+        repeat
+            deps[i + 1]:delete(effect)
+            i = i + 1
+        until not (i < #deps)
+        -- [ts2lua]修改数组长度需要手动处理。
+        deps.length = 0
     end
-  end
 end
 
-function trigger(target, type, key, newValue, oldValue, oldTarget)
-  local depsMap = targetMap:get(target)
-  if not depsMap then
-    return
-  end
-  local effects = Set()
-  local add = function(effectsToAdd)
-    if effectsToAdd then
-      effectsToAdd:forEach(function(effect)
-        if effect ~= activeEffect or not shouldTrack then
-          effects:add(effect)
+local function createReactiveEffect(fn, options)
+    local effect  = {}
+    effect.run = function(...)
+        if not effect.active then
+            if options.scheduler then
+                return nil
+            else
+                return return fn(...)
+            end
         end
-      end
-      )
+        if not effectStack:includes(effect) then
+            cleanup(effect)
+            xpcall(function()
+                    enableTracking()
+                    tinsert(effectStack, effect)
+                    activeEffect = effect
+                    return fn(...)
+                end, traceback)
+                
+            effectStack:pop()
+            resetTracking()
+            activeEffect = effectStack[#effectStack - 1]
+        end
     end
-  end
-  
-  if type == TriggerOpTypes.CLEAR then
-    depsMap:forEach(add)
-  elseif key == 'length' and isArray(target) then
-    depsMap:forEach(function(dep, key)
-      if key == 'length' or key >= newValue then
-        add(dep)
-      end
-    end
-    )
-  else
-    if key ~= undefined then
-      add(depsMap:get(key))
-    end
-    local isAddOrDelete = type == TriggerOpTypes.ADD or type == TriggerOpTypes.DELETE and not isArray(target)
-    if isAddOrDelete or type == TriggerOpTypes.SET and target:instanceof(Map) then
-      -- [ts2lua]lua中0和空字符串也是true，此处isArray(target)需要确认
-      add(depsMap:get((isArray(target) and {'length'} or {ITERATE_KEY})[1]))
-    end
-    if isAddOrDelete and target:instanceof(Map) then
-      add(depsMap:get(MAP_KEY_ITERATE_KEY))
-    end
-  end
-  local run = function(effect)
-    if __DEV__ and effect.options.onTrigger then
-      effect.options:onTrigger({effect=effect, target=target, key=key, type=type, newValue=newValue, oldValue=oldValue, oldTarget=oldTarget})
-    end
-    if effect.options.scheduler then
-      effect.options:scheduler(effect)
-    else
-      effect()
-    end
-  end
-  
-  effects:forEach(run)
+
+    uid = uid + 1
+    effect.id = uid
+    effect._isEffect = true
+    effect.active = true
+    effect.raw = fn
+    effect.deps = {}
+    effect.options = options
+    return effect
 end
+
+local function effect(fn, options)
+    if options == nil then
+        options = EMPTY_OBJ
+    end
+    if isEffect(fn) then
+        fn = fn.raw
+    end
+    local effect = createReactiveEffect(fn, options)
+    if not options.lazy then
+        effect.run()
+    end
+    return effect.run
+end
+
+local function stop(effect)
+    if effect.active then
+        cleanup(effect)
+        if effect.options.onStop then
+            effect.options:onStop()
+        end
+        effect.active = false
+    end
+end
+
+
+local function track(target, type, key)
+    if not shouldTrack or activeEffect == nil then
+        return
+    end
+    local depsMap = targetMap[target]
+    if not depsMap then
+        depsMap = {}
+        targetMap[target] = depsMap
+    end
+    local dep = depsMap[key]
+    if not dep then
+        dep = {}
+        depsMap[key] = dep
+    end
+    if not dep[activeEffect] then
+        dep[activeEffect] = true
+        tinsert(activeEffect.deps, dep)
+        if __DEV__ and activeEffect.options.onTrack then
+            activeEffect.options:onTrack({effect = activeEffect, target = target, type = type, key = key})
+        end
+    end
+end
+
+local function trigger(target, type, key, newValue, oldValue, oldTarget)
+    local depsMap = targetMap[target]
+    if not depsMap then
+        -- never been tracked
+        return
+    end
+    local effects = {}
+    local add = function(effectsToAdd)
+        if effectsToAdd then
+            for _, effect in ipairs(effectsToAdd) do
+                if effect ~= activeEffect or not shouldTrack then
+                    effects:add(effect)
+                -- the effect mutated its own dependency during its execution.
+                -- this can be caused by operations like foo.value++
+                -- do not trigger or we end in an infinite loop
+                end
+            end
+        end
+    end
+
+    if type == TriggerOpTypes.CLEAR then
+        -- collection being cleared
+        -- trigger all effects for target
+        for _,v in pairs(depsMap) do
+            add(v)
+        end
+    -- elseif key == "length" and isArray(target) then
+    --     depsMap:forEach(
+    --         function(dep, key)
+    --             if key == "length" or key >= newValue then
+    --                 add(dep)
+    --             end
+    --         end
+    --     )
+    else
+        -- schedule runs for SET | ADD | DELETE
+        if key ~= nil then
+            add(depsMap[key])
+        end
+        -- also run for iteration key on ADD | DELETE | Map.SET
+        if type == TriggerOpTypes.ADD or type == TriggerOpTypes.DELETE then
+            add(depsMap[ITERATOR_KEY])
+        end
+    end
+    local run = function(effect)
+        if __DEV__ and effect.options.onTrigger then
+            effect.options:onTrigger(
+                {
+                    effect = effect,
+                    target = target,
+                    key = key,
+                    type = type,
+                    newValue = newValue,
+                    oldValue = oldValue,
+                    oldTarget = oldTarget
+                }
+            )
+        end
+        if effect.options.scheduler then
+            effect.options:scheduler(effect)
+        else
+            effect()
+        end
+    end
+
+    for _, v in ipairs(effects) do
+        run(v)
+    end
+end
+
+return {
+    trigger = trigger,
+    track = track,
+    ITERATOR_KEY = ITERATOR_KEY,
+}

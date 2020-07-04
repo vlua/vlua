@@ -1,157 +1,171 @@
-require("reactivity/src/reactive")
-require("reactivity/src/reactive/ReactiveFlags")
-require("reactivity/src/operations/TrackOpTypes")
-require("reactivity/src/operations/TriggerOpTypes")
-require("reactivity/src/effect")
-require("@vue/shared")
-require("reactivity/src/ref")
+local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
+local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
+local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 
-local builtInSymbols = Set(Object:getOwnPropertyNames(Symbol):map(function(key)
-  -- [ts2lua]Symbol下标访问可能不正确
-  Symbol[key]
+local effect = require("reactivity.effect")
+local track, trigger, ITERATOR_KEY = effect.track, effect.trigger, effect.ITERATOR_KEY
+
+local ref = require("reactivity.ref")
+local isRef = ref.isRef
+
+local config = require("reactivity.config")
+local __DEV__ = config.__DEV__
+
+local type, ipairs, pairs = type, ipairs, pairs
+
+local reactiveUtils = require("reactivity.reactiveUtils")
+local isObject, hasChanged, extend, warn, toRaw =
+    reactiveUtils.isObject,
+    reactiveUtils.hasChanged,
+    reactiveUtils.extend,
+    reactiveUtils.warn,
+    reactiveUtils.toRaw
+
+local function createGetter(isReadonly, shallow)
+    if isReadonly == nil then
+        isReadonly = false
+    end
+    if shallow == nil then
+        shallow = false
+    end
+    return function(target, key, receiver)
+        if key == ReactiveFlags.IS_REACTIVE then
+            return not isReadonly
+        elseif key == ReactiveFlags.IS_READONLY then
+            return isReadonly
+        elseif
+            key == ReactiveFlags.RAW and
+                receiver == (isReadonly and target[ReactiveFlags.READONLY] or target[ReactiveFlags.REACTIVE])
+         then
+            return target
+        end
+
+        local res = target[key]
+        if key == "__v_isRef" then
+            -- ref unwrapping, only for Objects, not for Arrays.
+            return res
+        end
+        if not isReadonly then
+            track(target, TrackOpTypes.GET, key)
+        end
+        if shallow then
+            return res
+        end
+        if isRef(res) then
+            return res.value
+        end
+        if isObject(res) then
+            -- Convert returned value into a proxy as well. we do the isObject check
+            -- here to avoid invalid value warning. Also need to lazy access readonly
+            -- and reactive here to avoid circular dependency.
+            if isReadonly then
+                return readonly(res)
+            else
+                return reactive(res)
+            end
+        end
+        return res
+    end
 end
-):filter(isSymbol))
+
 local get = createGetter()
 local shallowGet = createGetter(false, true)
 local readonlyGet = createGetter(true)
 local shallowReadonlyGet = createGetter(true, true)
-local arrayInstrumentations = {}
-({'includes', 'indexOf', 'lastIndexOf'}):forEach(function(key)
-  -- [ts2lua]arrayInstrumentations下标访问可能不正确
-  arrayInstrumentations[key] = function(...)
-    local arr = toRaw(self)
-    local i = 0
-    local l = #self
-    repeat
-      track(arr, TrackOpTypes.GET, i .. '')
-      i=i+1
-    until not(i < l)
-    -- [ts2lua]arr下标访问可能不正确
-    local res = arr[key](...)
-    if res == -1 or res == false then
-      -- [ts2lua]arr下标访问可能不正确
-      return arr[key](...)
-    else
-      return res
-    end
-  end
-  
 
-end
-)
-function createGetter(isReadonly, shallow)
-  if isReadonly == nil then
-    isReadonly=false
-  end
-  if shallow == nil then
-    shallow=false
-  end
-  return function get(target, key, receiver)
-    if key == ReactiveFlags.IS_REACTIVE then
-      return not isReadonly
-    elseif key == ReactiveFlags.IS_READONLY then
-      return isReadonly
-    -- [ts2lua]target下标访问可能不正确
-    -- [ts2lua]target下标访问可能不正确
-    -- [ts2lua]lua中0和空字符串也是true，此处isReadonly需要确认
-    elseif key == ReactiveFlags.RAW and receiver == (isReadonly and {target[ReactiveFlags.READONLY]} or {target[ReactiveFlags.REACTIVE]})[1] then
-      return target
+local function createSetter(shallow)
+    if shallow == nil then
+        shallow = false
     end
-    local targetIsArray = isArray(target)
-    if targetIsArray and hasOwn(arrayInstrumentations, key) then
-      return Reflect:get(arrayInstrumentations, key, receiver)
-    end
-    local res = Reflect:get(target, key, receiver)
-    -- [ts2lua]lua中0和空字符串也是true，此处isSymbol(key)需要确认
-    if (isSymbol(key) and {builtInSymbols:has(key)} or {key ==  or key == })[1] then
-      return res
-    end
-    if not isReadonly then
-      track(target, TrackOpTypes.GET, key)
-    end
-    if shallow then
-      return res
-    end
-    if isRef(res) then
-      -- [ts2lua]lua中0和空字符串也是true，此处targetIsArray需要确认
-      return (targetIsArray and {res} or {res.value})[1]
-    end
-    if isObject(res) then
-      -- [ts2lua]lua中0和空字符串也是true，此处isReadonly需要确认
-      return (isReadonly and {readonly(res)} or {reactive(res)})[1]
-    end
-    return res
-  end
-  
+    return function(target, key, value, receiver)
+        local oldValue = target[key]
+        if not shallow then
+            value = toRaw(value)
+            if isRef(oldValue) and not isRef(value) then
+                oldValue.value = value
+                return true
+            end
 
+        -- in shallow mode, objects are set as-is regardless of reactive or not
+        end
+        target[key] = value
+        -- don't trigger if target is something up in the prototype chain of original
+        if target == toRaw(receiver) then
+            if oldValue == nil then
+                trigger(target, TriggerOpTypes.ADD, key, value)
+            elseif hasChanged(value, oldValue) then
+                trigger(target, TriggerOpTypes.SET, key, value, oldValue)
+            end
+        end
+    end
 end
 
 local set = createSetter()
 local shallowSet = createSetter(true)
-function createSetter(shallow)
-  if shallow == nil then
-    shallow=false
-  end
-  return function set(target, key, value, receiver)
-    -- [ts2lua]target下标访问可能不正确
+
+local function deleteProperty(target, key)
     local oldValue = target[key]
-    if not shallow then
-      value = toRaw(value)
-      if (not isArray(target) and isRef(oldValue)) and not isRef(value) then
-        oldValue.value = value
-        return true
-      end
+    if oldValue ~= nil then
+        target[key] = nil
+        trigger(target, TriggerOpTypes.DELETE, key, nil, oldValue)
     end
-    local hadKey = hasOwn(target, key)
-    local result = Reflect:set(target, key, value, receiver)
-    if target == toRaw(receiver) then
-      if not hadKey then
-        trigger(target, TriggerOpTypes.ADD, key, value)
-      elseif hasChanged(value, oldValue) then
-        trigger(target, TriggerOpTypes.SET, key, value, oldValue)
-      end
-    end
-    return result
-  end
-  
-
 end
 
-function deleteProperty(target, key)
-  local hadKey = hasOwn(target, key)
-  -- [ts2lua]target下标访问可能不正确
-  local oldValue = target[key]
-  local result = Reflect:deleteProperty(target, key)
-  if result and hadKey then
-    trigger(target, TriggerOpTypes.DELETE, key, undefined, oldValue)
-  end
-  return result
+local function has(target, key)
+    local result = target[key]
+    track(target, TrackOpTypes.HAS, key)
+    return result ~= nil
 end
 
-function has(target, key)
-  local result = Reflect:has(target, key)
-  track(target, TrackOpTypes.HAS, key)
-  return result
+local function iterator(target)
+    track(target, TrackOpTypes.ITERATOR, ITERATOR_KEY)
+    return pairs(target)
 end
 
-function ownKeys(target)
-  track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
-  return Reflect:ownKeys(target)
-end
-
-local mutableHandlers = {get=get, set=set, deleteProperty=deleteProperty, has=has, ownKeys=ownKeys}
-local readonlyHandlers = {get=readonlyGet, has=has, ownKeys=ownKeys, set=function(target, key)
-  if __DEV__ then
-    console:warn(target)
-  end
-  return true
-end
-, deleteProperty=function(target, key)
-  if __DEV__ then
-    console:warn(target)
-  end
-  return true
-end
+local mutableHandlers = {
+    get = get,
+    set = set,
+    deleteProperty = deleteProperty,
+    has = has,
+    iterator = iterator
 }
-local shallowReactiveHandlers = extend({}, mutableHandlers, {get=shallowGet, set=shallowSet})
-local shallowReadonlyHandlers = extend({}, readonlyHandlers, {get=shallowReadonlyGet})
+
+local readonlyHandlers = {
+    get = readonlyGet,
+    has = has,
+    iterator = iterator,
+    set = function(target, key)
+        if __DEV__ then
+            warn(target)
+        end
+        return true
+    end,
+    deleteProperty = function(target, key)
+        if __DEV__ then
+            warn(target)
+        end
+        return true
+    end
+}
+
+-- Props handlers are special in the sense that it should not unwrap top-level
+-- refs (in order to allow refs to be explicitly passed down), but should
+-- retain the reactivity of the normal readonly object.
+local shallowReactiveHandlers = extend({}, mutableHandlers, {get = shallowGet, set = shallowSet})
+local shallowReadonlyHandlers = extend({}, readonlyHandlers, {get = shallowReadonlyGet})
+
+return {
+    get = get,
+    shallowGet = shallowGet,
+    readonlyGet = readonlyGet,
+    shallowReadonlyGet = shallowReadonlyGet,
+    set = set,
+    shallowSet = shallowSet,
+    deleteProperty = deleteProperty,
+    has = has,
+    iterator = iterator,
+    mutableHandlers = mutableHandlers,
+    readonlyHandlers = readonlyHandlers,
+    shallowReactiveHandlers = shallowReactiveHandlers,
+    shallowReadonlyHandlers = shallowReadonlyHandlers
+}

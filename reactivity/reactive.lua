@@ -184,7 +184,7 @@ createReactiveObject = function(target, isReadonly, shallow)
                 local property = properties[key]
                 if property then
                     property[V_SETTER](self, newValue)
-                else
+                elseif newValue ~= nil then
                     defineReactive(target, key, newValue, isReadonly, shallow, properties)
                     -- 增加元素
                     trigger(target, TriggerOpTypes.ADD, key, newValue)

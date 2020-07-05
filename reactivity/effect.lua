@@ -190,9 +190,10 @@ local function trigger(target, type, key, newValue, oldValue)
             add(depsMap[key])
         end
         -- also run for iteration key on ADD | DELETE | Map.SET
-        if type == TriggerOpTypes.ADD or type == TriggerOpTypes.DELETE then
-            add(depsMap[ITERATE_KEY])
-        end
+        -- if type == TriggerOpTypes.ADD or type == TriggerOpTypes.DELETE then
+        -- 不管是添加/删除/修改，只要是使用pairs或ipairs迭代过的，都要触发
+        add(depsMap[ITERATE_KEY])
+        -- end
     end
 
     for effect in pairs(effects) do

@@ -1,6 +1,10 @@
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
+
+local SET, ADD, DELETE, CLEAR = TriggerOpTypes.SET, TriggerOpTypes.ADD, TriggerOpTypes.DELETE, TriggerOpTypes.CLEAR
+local GET, HAS, ITERATE = TrackOpTypes.GET, TrackOpTypes.HAS, TrackOpTypes.ITERATE
+
 local computed = require("reactivity.computed").computed
 local V_GETTER, V_SETTER, SKIP, IS_REACTIVE, IS_SHALLOW, IS_READONLY, RAW, REACTIVE, READONLY, DEPSMAP =
     ReactiveFlags.V_GETTER,
@@ -62,7 +66,7 @@ createRefWrapper = function(properties, key, value)
             -- 引用覆盖
             if isRef(newVal) then
                 createRefWrapper(properties, key, newVal)
-                trigger(value, TriggerOpTypes.SET, "value", newVal[V_GETTER](self), value[V_GETTER](self))
+                trigger(value, SET, "value", newVal[V_GETTER](self), value[V_GETTER](self))
                 return
             end
             setter(self, newVal)
@@ -114,7 +118,7 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
             -- 对于新的Ref要处理
             if isRef(newVal) then
                 createRefWrapper(properties, key, newVal)
-                trigger(target, TriggerOpTypes.SET, key, newVal[V_GETTER](self), oldValue)
+                trigger(target, SET, key, newVal[V_GETTER](self), oldValue)
                 return
             else
                 childOb = not shallow and type(newVal) == "table" and createReactiveObject(newVal, isReadonly, shallow)
@@ -124,9 +128,9 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
             -- 删除元素
             if newVal == nil then
                 properties[key] = nil
-                trigger(target, TriggerOpTypes.DELETE, key, newVal, oldValue)
+                trigger(target, DELETE, key, newVal, oldValue)
             else
-                trigger(target, TriggerOpTypes.SET, key, newVal, oldValue)
+                trigger(target, SET, key, newVal, oldValue)
             end
         end
     end
@@ -146,6 +150,7 @@ createReactiveObject = function(target, isReadonly, shallow)
     local observed = getmetatable(target)
 
     if observed == nil then
+        -- 不允许改变只读状态
         observed = {}
         observed[RAW] = target
         observed[IS_READONLY] = isReadonly
@@ -160,7 +165,7 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- 只读模式数据不会改变，所以不需要通知被引用
         observed.__index = function(self, key)
             if not isReadonly then
-                track(target, TrackOpTypes.GET, key)
+                track(target, GET, key)
             end
             local property = properties[key]
             if property then
@@ -187,7 +192,7 @@ createReactiveObject = function(target, isReadonly, shallow)
                 elseif newValue ~= nil then
                     defineReactive(target, key, newValue, isReadonly, shallow, properties)
                     -- 增加元素
-                    trigger(target, TriggerOpTypes.ADD, key, newValue)
+                    trigger(target, ADD, key, newValue)
                 end
             end
         end
@@ -195,7 +200,7 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- map遍历
         observed.__pairs = function(self)
             if not isReadonly then
-                track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
+                track(target, ITERATE, ITERATE_KEY)
             end
             local key, valueStore
             return function()
@@ -209,11 +214,11 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- 数组遍历
         observed.__ipairs = function(self)
             if not isReadonly then
-                track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
+                track(target, ITERATE, ITERATE_KEY)
             end
             local i = 1
             local valueStore
-            return function(a,b,c)
+            return function(a, b, c)
                 valueStore = properties[i]
                 i = i + 1
                 if valueStore ~= nil then
@@ -225,14 +230,13 @@ createReactiveObject = function(target, isReadonly, shallow)
         -- 获取table大小
         observed.__len = function()
             if not isReadonly then
-                track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
+                track(target, ITERATE, ITERATE_KEY)
             end
             return #properties
         end
         setmetatable(target, observed)
-    -- 不允许改变只读状态
     elseif observed[IS_REACTIVE] and (observed[IS_READONLY] ~= isReadonly or observed[IS_SHALLOW] ~= shallow) then
-        warn('cannot change readonly or shallow on a reactive object')
+        warn("cannot change readonly or shallow on a reactive object")
     end
 
     return target

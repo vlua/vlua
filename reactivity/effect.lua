@@ -5,6 +5,8 @@ local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
 
+local SET, ADD, DELETE, CLEAR = TriggerOpTypes.SET, TriggerOpTypes.ADD, TriggerOpTypes.DELETE, TriggerOpTypes.CLEAR
+
 local assert, getmetatable, setmetatable, type, ipairs, pairs, tinsert, xpcall, tremove, tunpack =
     assert,
     getmetatable,
@@ -178,22 +180,22 @@ local function trigger(target, type, key, newValue, oldValue)
         end
     end
 
-    if type == TriggerOpTypes.CLEAR then
+    if type == CLEAR then
         -- collection being cleared
         -- trigger all effects for target
         for _, v in pairs(depsMap) do
             add(v)
         end
     else
+        -- end
         -- schedule runs for SET | ADD | DELETE
         if key ~= nil then
             add(depsMap[key])
         end
         -- also run for iteration key on ADD | DELETE | Map.SET
-        -- if type == TriggerOpTypes.ADD or type == TriggerOpTypes.DELETE then
+        -- if type == ADD or type == DELETE then
         -- 不管是添加/删除/修改，只要是使用pairs或ipairs迭代过的，都要触发
         add(depsMap[ITERATE_KEY])
-        -- end
     end
 
     for effect in pairs(effects) do

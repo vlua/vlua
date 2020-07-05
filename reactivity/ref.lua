@@ -2,6 +2,9 @@ local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 
+local SET, ADD, DELETE, CLEAR = TriggerOpTypes.SET, TriggerOpTypes.ADD, TriggerOpTypes.DELETE, TriggerOpTypes.CLEAR
+local GET, HAS, ITERATE = TrackOpTypes.GET, TrackOpTypes.HAS, TrackOpTypes.ITERATE
+
 local effect = require("reactivity.effect")
 local track, trigger, IPAIR_KEY, PAIR_KEY = effect.track, effect.trigger, effect.IPAIR_KEY, effect.PAIR_KEY
 
@@ -49,7 +52,7 @@ return function(Reactive)
 
         local refObject
         local function getter(self)
-            track(refObject, TrackOpTypes.GET, "value")
+            track(refObject, GET, "value")
             return value
         end
 
@@ -66,7 +69,7 @@ return function(Reactive)
                 local oldValue = value
 
                 value = shallow and newValue or Reactive.reactive(newValue)
-                trigger(refObject, TriggerOpTypes.SET, "value", value, oldValue)
+                trigger(refObject, SET, "value", value, oldValue)
             end
         end
 
@@ -111,7 +114,7 @@ return function(Reactive)
 
     local function triggerRef(ref)
         local value = ref.value
-        trigger(ref, TriggerOpTypes.SET, "value", value, value)
+        trigger(ref, SET, "value", value, value)
     end
 
     local function unref(ref)
@@ -129,10 +132,10 @@ return function(Reactive)
         local getter, setter =
             factory(
             function()
-                track(refObject, TrackOpTypes.GET, "value")
+                track(refObject, GET, "value")
             end,
             function()
-                trigger(refObject, TriggerOpTypes.SET, "value")
+                trigger(refObject, SET, "value")
             end
         )
 
@@ -194,7 +197,7 @@ return function(Reactive)
 
     local function toRefs(object)
         if __DEV__ and not Reactive.isReactive(object) then
-            warn('')
+            warn("")
         end
         local ret = {}
         for key in pairs(object) do

@@ -1,6 +1,8 @@
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
+local SET, ADD, DELETE, CLEAR = TriggerOpTypes.SET, TriggerOpTypes.ADD, TriggerOpTypes.DELETE, TriggerOpTypes.CLEAR
+local GET, HAS, ITERATE = TrackOpTypes.GET, TrackOpTypes.HAS, TrackOpTypes.ITERATE
 
 local Effect = require("reactivity.effect")
 local track, trigger, IPAIR_KEY, PAIR_KEY, effect =
@@ -41,10 +43,10 @@ local isObject, hasChanged, extend, warn, NOOP, isFunction, isCallable =
 local function computed(getter, setter)
     if __DEV__ then
         if not isCallable(getter) then
-            warn('computed getter is not a function or table with __call')
+            warn("computed getter is not a function or table with __call")
         end
         if setter ~= nil and not isCallable(setter) then
-            warn('computed setter is not a function or table with __call')
+            warn("computed setter is not a function or table with __call")
         end
     end
     local dirty = true
@@ -61,7 +63,7 @@ local function computed(getter, setter)
             scheduler = function(effect, target, type, key, newValue, oldValue)
                 if not dirty then
                     dirty = true
-                    trigger(computed, TriggerOpTypes.SET, "value", newValue, oldValue)
+                    trigger(computed, SET, "value", newValue, oldValue)
                 end
             end
         }
@@ -72,14 +74,14 @@ local function computed(getter, setter)
             value = runner(runner, self)
             dirty = false
         end
-        track(computed, TrackOpTypes.GET, "value")
+        track(computed, GET, "value")
         return value
     end
 
     local setterImpl
     if not setter then
         setterImpl = function(self)
-            warn('Write operation failed: computed value is readonly')
+            warn("Write operation failed: computed value is readonly")
         end
     else
         setterImpl = setter

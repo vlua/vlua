@@ -200,7 +200,9 @@ createReactiveObject = function(target, isReadonly, shallow)
             local key, valueStore
             return function()
                 key, valueStore = next(properties, key)
-                return key, valueStore and valueStore[V_GETTER](self)
+                if valueStore then
+                    return key, valueStore[V_GETTER](self)
+                end
             end
         end
 
@@ -211,10 +213,12 @@ createReactiveObject = function(target, isReadonly, shallow)
             end
             local i = 1
             local valueStore
-            return function()
+            return function(a,b,c)
                 valueStore = properties[i]
                 i = i + 1
-                return i, valueStore and valueStore[V_GETTER](self)
+                if valueStore ~= nil then
+                    return i, valueStore[V_GETTER](self)
+                end
             end
         end
 

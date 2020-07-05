@@ -1,4 +1,5 @@
 require('test.unittest')(function()
+    require("reactivity.__tests__.reactiveArray_spec")
     require("reactivity.__tests__.shallowReactive_spec")
     require("reactivity.__tests__.readonly_spec")
     require("reactivity.__tests__.ref_spec")

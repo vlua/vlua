@@ -802,7 +802,7 @@ describe('reactivity/effect', function()
     local dummy = nil
     local record = nil
     effect(function()
-      -- [ts2lua]修改数组长度需要手动处理。
+      
       dummy = observed.length
     end
     )
@@ -817,7 +817,7 @@ describe('reactivity/effect', function()
     observed:unshift(3)
     expect(dummy):toBe(3)
     expect(record):toBe(3)
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     observed.length = 0
     expect(dummy):toBe(0)
     expect(record):toBeUndefined()

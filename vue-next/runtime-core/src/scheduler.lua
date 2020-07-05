@@ -46,7 +46,7 @@ end
 function flushPostFlushCbs(seen)
   if #postFlushCbs then
     local cbs = {...}
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     postFlushCbs.length = 0
     if __DEV__ then
       seen = seen or Map()

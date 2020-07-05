@@ -80,7 +80,7 @@ function cleanup(effect)
       deps[i+1]:delete(effect)
       i=i+1
     until not(i < #deps)
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     deps.length = 0
   end
 end

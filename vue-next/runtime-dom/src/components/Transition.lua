@@ -226,14 +226,14 @@ function getTransitionInfo(el, expectedType)
     if transitionTimeout > 0 then
       type = TRANSITION
       timeout = transitionTimeout
-      -- [ts2lua]修改数组长度需要手动处理。
+      
       propCount = transitionDurations.length
     end
   elseif expectedType == ANIMATION then
     if animationTimeout > 0 then
       type = ANIMATION
       timeout = animationTimeout
-      -- [ts2lua]修改数组长度需要手动处理。
+      
       propCount = animationDurations.length
     end
   else

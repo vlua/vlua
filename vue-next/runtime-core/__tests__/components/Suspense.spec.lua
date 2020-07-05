@@ -3,7 +3,7 @@ require("@vue/runtime-test")
 describe('Suspense', function()
   local deps = {}
   beforeEach(function()
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     deps.length = 0
   end
   )

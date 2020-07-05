@@ -403,27 +403,27 @@ describe('compiler: parse', function()
     local  = baseParse(():trim()).children
     local offset = 0
     expect(foo.loc.start):toEqual({line=1, column=1, offset=offset})
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     offset = offset + foo.loc.source.length
     expect(foo.loc.tsvar_end):toEqual({line=2, column=5, offset=offset})
     expect(bar.loc.start):toEqual({line=2, column=5, offset=offset})
     local barInner = bar.content
     offset = offset + 3
     expect(barInner.loc.start):toEqual({line=2, column=8, offset=offset})
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     offset = offset + barInner.loc.source.length
     expect(barInner.loc.tsvar_end):toEqual({line=2, column=11, offset=offset})
     offset = offset + 3
     expect(bar.loc.tsvar_end):toEqual({line=2, column=14, offset=offset})
     expect(but.loc.start):toEqual({line=2, column=14, offset=offset})
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     offset = offset + but.loc.source.length
     expect(but.loc.tsvar_end):toEqual({line=2, column=19, offset=offset})
     expect(baz.loc.start):toEqual({line=2, column=19, offset=offset})
     local bazInner = baz.content
     offset = offset + 3
     expect(bazInner.loc.start):toEqual({line=2, column=22, offset=offset})
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     offset = offset + bazInner.loc.source.length
     expect(bazInner.loc.tsvar_end):toEqual({line=2, column=25, offset=offset})
     offset = offset + 3

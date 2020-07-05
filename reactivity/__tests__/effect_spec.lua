@@ -1033,7 +1033,7 @@ describe(
                 local record = nil
                 effect(
                     function()
-                        -- [ts2lua]修改数组长度需要手动处理。
+                        
                         dummy = #observed
                     end
                 )
@@ -1049,7 +1049,7 @@ describe(
                 table.insert(observed, 1, 3)
                 lu.assertEquals(dummy, 3)
                 lu.assertEquals(record, 3)
-                -- [ts2lua]修改数组长度需要手动处理。
+                
 				for i,v in pairs(observed) do
 					observed[i] = nil
 				end

@@ -331,7 +331,7 @@ describe('SSR hydration', function()
     local container = document:createElement('div')
     container.innerHTML = 
     expect(container.innerHTML):toMatchInlineSnapshot()
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     asyncDeps.length = 0
     createSSRApp(App):mount(container)
     expect(#mountedCalls):toBe(0)

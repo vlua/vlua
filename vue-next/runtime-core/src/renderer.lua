@@ -1162,7 +1162,7 @@ function getSequence(arr)
     until true
     i=i+1
   until not(i < len)
-  -- [ts2lua]修改数组长度需要手动处理。
+  
   u = result.length
   -- [ts2lua]result下标访问可能不正确
   v = result[u - 1]

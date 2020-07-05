@@ -279,11 +279,11 @@ describe('api: lifecycle hooks', function()
     }
     render(h(Root), root)
     expect(calls):toEqual({'root onBeforeMount', 'mid onBeforeMount', 'child onBeforeMount', 'child onMounted', 'mid onMounted', 'root onMounted'})
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     calls.length = 0
     count.value=count.value+1
     expect(calls):toEqual({'root onBeforeUpdate', 'mid onBeforeUpdate', 'child onBeforeUpdate', 'child onUpdated', 'mid onUpdated', 'root onUpdated'})
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     calls.length = 0
     render(nil, root)
     expect(calls):toEqual({'root onBeforeUnmount', 'mid onBeforeUnmount', 'child onBeforeUnmount', 'child onUnmounted', 'mid onUnmounted', 'root onUnmounted'})

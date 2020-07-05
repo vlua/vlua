@@ -50,7 +50,7 @@ local stringifyStatic = function(children, context, parent)
       i = i - stringifyCurrentChunk(i)
       nc = 0
       ec = 0
-      -- [ts2lua]修改数组长度需要手动处理。
+      
       currentChunk.length = 0
     until true
     i=i+1

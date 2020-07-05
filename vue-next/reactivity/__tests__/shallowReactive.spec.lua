@@ -75,7 +75,7 @@ describe('shallowReactive', function()
       local a = {}
       local size = nil
       effect(function()
-        -- [ts2lua]修改数组长度需要手动处理。
+        
         size = shallowArray.length
       end
       )

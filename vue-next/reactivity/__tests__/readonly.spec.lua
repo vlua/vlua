@@ -93,7 +93,7 @@ describe('reactivity/readonly', function()
       wrapped[0+1].foo = 2
       expect(wrapped[0+1].foo):toBe(1)
       expect():toHaveBeenWarned()
-      -- [ts2lua]修改数组长度需要手动处理。
+      
       wrapped.length = 0
       expect(#wrapped):toBe(1)
       expect(wrapped[0+1].foo):toBe(1)

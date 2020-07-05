@@ -9,7 +9,7 @@ local transformVHtml = function(dir, node, context)
   end
   if #node.children then
     context:onError(createDOMCompilerError(DOMErrorCodes.X_V_HTML_WITH_CHILDREN, loc))
-    -- [ts2lua]修改数组长度需要手动处理。
+    
     node.children.length = 0
   end
   return {props={createObjectProperty(createSimpleExpression(true, loc), exp or createSimpleExpression('', true))}}

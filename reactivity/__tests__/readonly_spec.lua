@@ -138,7 +138,7 @@ describe(
                         wrapped[0 + 1].foo = 2
                         lu.assertEquals(wrapped[0 + 1].foo, 1)
                         lu.toHaveBeenWarned('Set operation on key "foo" failed: target is readonly.')
-                        -- [ts2lua]修改数组长度需要手动处理。
+                        
                         wrapped[1] = nil
                         lu.assertEquals(#wrapped, 1)
                         lu.assertEquals(wrapped[0 + 1].foo, 1)

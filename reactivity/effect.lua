@@ -133,8 +133,8 @@ local function stop(effect)
     end
 end
 
-local function track(target, type, key)
-    if not shouldTrack or activeEffect == nil then
+local function track(target, trackType, key)
+    if not shouldTrack or activeEffect == nil or type(target) ~= 'table' then
         return
     end
     local mt = getmetatable(target)
@@ -153,12 +153,12 @@ local function track(target, type, key)
         dep[activeEffect] = activeEffect
         tinsert(activeEffect.deps, dep)
         if __DEV__ and activeEffect.options.onTrack then
-            activeEffect.options.onTrack(activeEffect, target, type, key)
+            activeEffect.options.onTrack(activeEffect, target, trackType, key)
         end
     end
 end
 
-local function trigger(target, type, key, newValue, oldValue)
+local function trigger(target, triggerType, key, newValue, oldValue)
     local mt = getmetatable(target)
     assert(mt)
     local depsMap = mt[DEPSMAP]
@@ -200,12 +200,12 @@ local function trigger(target, type, key, newValue, oldValue)
 
     for effect in pairs(effects) do
         if __DEV__ and effect.options.onTrigger then
-            effect.options.onTrigger(effect, target, type, key, newValue, oldValue)
+            effect.options.onTrigger(effect, target, triggerType, key, newValue, oldValue)
         end
         if effect.options.scheduler then
-            effect.options.scheduler(effect, target, type, key, newValue, oldValue)
+            effect.options.scheduler(effect, target, triggerType, key, newValue, oldValue)
         else
-            effect(effect, target, type, key, newValue, oldValue)
+            effect(effect, target, triggerType, key, newValue, oldValue)
         end
     end
 end

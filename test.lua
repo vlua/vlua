@@ -21,3 +21,4 @@ end)
 
 require('examples.example_01')
 require('examples.example_02')
+require('next_example')

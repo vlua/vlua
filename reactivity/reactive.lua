@@ -133,7 +133,11 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
 end
 
 local function walk(obj, isReadonly, shallow, properties)
+    local keyOb
     for k, v in pairs(obj) do
+        -- 同时支持key的响应式
+        keyOb = not shallow and type(k) == "table" and createReactiveObject(k, isReadonly, shallow)
+        -- 把value响应式
         defineReactive(obj, k, nil, isReadonly, shallow, properties)
     end
 end
@@ -166,8 +170,14 @@ createReactiveObject = function(target, isReadonly, shallow)
 
         -- 只读不更改
         if isReadonly then
-            if __DEV__ then
-                warn(sformat("%s is readonly", tostring(self[RAW])))
+            observed.__newindex = function(self, key, newValue)
+                if __DEV__ then
+                    if newValue ~= nil then
+                        warn('Set operation on key "' .. tostring(key) .. '" failed: target is readonly.')
+                    else
+                        warn('Delete operation on key "' .. tostring(key) .. '" failed: target is readonly.')
+                    end
+                end
             end
         else
             observed.__newindex = function(self, key, newValue)
@@ -216,6 +226,9 @@ createReactiveObject = function(target, isReadonly, shallow)
             return #properties
         end
         setmetatable(target, observed)
+    -- 不允许改变只读状态
+    elseif observed[IS_REACTIVE] and (observed[IS_READONLY] ~= isReadonly or observed[IS_SHALLOW] ~= shallow) then
+        warn('cannot change readonly or shallow on a reactive object')
     end
 
     return target

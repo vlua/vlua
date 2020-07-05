@@ -260,7 +260,7 @@ describe('reactivity/collections', function()
       local observed = reactive(map)
       local value = reactive({})
       observed:set('key', value)
-      expect(map:get('key')).tsvar_not:toBe(value)
+      lu.assertNotEquals(map:get('key'), value)
       lu.assertEquals(map:get('key'), toRaw(value))
     end
     )

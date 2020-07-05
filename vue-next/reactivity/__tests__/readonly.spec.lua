@@ -32,9 +32,9 @@ describe('reactivity/readonly', function()
       wrapped.bar.baz = 3
       expect(wrapped.bar.baz):toBe(2)
       expect():toHaveBeenWarnedLast()
-      -- [ts2lua]wrapped下标访问可能不正确
+      
       wrapped[qux] = 4
-      -- [ts2lua]wrapped下标访问可能不正确
+      
       expect(wrapped[qux]):toBe(3)
       expect():toHaveBeenWarnedLast()
       wrapped.foo = nil
@@ -43,9 +43,9 @@ describe('reactivity/readonly', function()
       wrapped.bar.baz = nil
       expect(wrapped.bar.baz):toBe(2)
       expect():toHaveBeenWarnedLast()
-      -- [ts2lua]wrapped下标访问可能不正确
+      
       wrapped[qux] = nil
-      -- [ts2lua]wrapped下标访问可能不正确
+      
       expect(wrapped[qux]):toBe(3)
       expect():toHaveBeenWarnedLast()
     end

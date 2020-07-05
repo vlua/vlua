@@ -6,9 +6,11 @@ local util = require('vlua.util')
 local reactiveUtils = require("reactivity.reactiveUtils")
 
 local warnMsg
+local warnCount = 0
 local warn = util.warn
 util.warn = function(msg,...)
     warnMsg = msg
+    warnCount = warnCount + 1
     warn(msg, ...)
 end
 
@@ -16,10 +18,19 @@ reactiveUtils.warn = util.warn
 
 function lu.clearWarn()
     warnMsg = nil
+    warnCount = 0
 end
 function lu.toHaveBeenWarned(msg)
     lu.assertStrContains(warnMsg, msg)
     warnMsg = nil
+end
+
+function lu.toHaventWarned()
+    lu.assertIsNil(warnMsg)
+end
+
+function lu.toHaveBeenWarnedTimes(count)
+    lu.assertEquals(warnCount, count)
 end
 
 local function noop()

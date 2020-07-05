@@ -1,26 +1,29 @@
 local nextTick = require("reactivity.nextTick").nextTick
-local type, tinsert,tremove, tsort = type, table.insert,table.remove, table.sort
+local pairs, type, tinsert, tremove, tsort = pairs, type, table.insert, table.remove, table.sort
 local __DEV__ = require("reactivity.config").__DEV__
 local ErrorCodes = require("reactivity.ErrorCodes")
 local reactiveUtils = require("reactivity.reactiveUtils")
-local warn, callWithErrorHandling, array_includes = reactiveUtils.warn, reactiveUtils.callWithErrorHandling, reactiveUtils.array_includes
+local warn, callWithErrorHandling, array_includes =
+    reactiveUtils.warn,
+    reactiveUtils.callWithErrorHandling,
+    reactiveUtils.array_includes
 
 local queue = {}
 local postFlushCbs = {}
 local isFlushing = false
 local isFlushPending = false
 local RECURSION_LIMIT = 100
-
+local INFINITE = 1e100
 
 local getId = function(job)
-    return job.id == nil and 0 or job.id
+    return type(job) == "function" and INFINITE or job.id
 end
 
 local function checkRecursiveUpdates(seen, fn)
     if not seen[fn] then
         seen[fn] = 1
     else
-        local count = nil
+        local count = seen[fn]
         if count > RECURSION_LIMIT then
             warn(
                 "Maximum recursive updates exceeded. " ..
@@ -34,21 +37,24 @@ local function checkRecursiveUpdates(seen, fn)
 end
 
 local function flushPostFlushCbs(seen, ...)
-    if #postFlushCbs then
-        local cbs = {...}
+    if #postFlushCbs > 0 then
+        -- 去重
+        local cbs = {}
+        for i = 1 , #postFlushCbs do
+            cbs[postFlushCbs[i]] = true
+        end
         postFlushCbs = {}
         if __DEV__ then
             seen = seen or {}
         end
-        for i = 1, #cbs do
+        for cb in pairs(cbs) do
             if __DEV__ then
-                checkRecursiveUpdates(seen, cbs[i])
+                checkRecursiveUpdates(seen, cb)
             end
-            cbs[i]()
-          end
+            cb()
+        end
     end
 end
-
 
 local function flushJobs(seen)
     isFlushPending = false
@@ -57,10 +63,19 @@ local function flushJobs(seen)
     if __DEV__ then
         seen = seen or {}
     end
+    -- Sort queue before flush.
+    -- This ensures that:
+    -- 1. Components are updated from parent to child. (because parent is always
+    --    created before the child so its render effect will have smaller
+    --    priority number)
+    -- 2. If a component is unmounted during a parent component's update,
+    --    its update can be skipped.
+    -- Jobs can never be null before flush starts, since they are only invalidated
+    -- during execution of another flushed job.
     tsort(
         queue,
         function(a, b)
-            return getId(a) - getId(b)
+            return getId(a) < getId(b)
         end
     )
     job = tremove(queue, 1)
@@ -69,7 +84,7 @@ local function flushJobs(seen)
             break
         end
         if __DEV__ then
-            checkRecursiveUpdates(job)
+            checkRecursiveUpdates(seen, job)
         end
         callWithErrorHandling(job, nil, ErrorCodes.SCHEDULER)
         job = tremove(queue, 1)
@@ -77,7 +92,10 @@ local function flushJobs(seen)
 
     flushPostFlushCbs(seen)
     isFlushing = false
-    if #queue or #postFlushCbs then
+
+    -- some postFlushCb queued jobs!
+    -- keep flushing until it drains.
+    if #queue > 0 or #postFlushCbs > 0 then
         flushJobs(seen)
     end
 end
@@ -97,22 +115,27 @@ local function queueJob(job)
 end
 
 local function invalidateJob(job)
-    local i = queue:find(job)
-    if i > -1 then
-        queue[i + 1] = nil
+    for i, v in ipairs(queue) do
+        if v == job then
+            table.remove(queue, i)
+            return
+        end
     end
 end
 
 local function queuePostFlushCb(cb, ...)
-    if type(cb) ~= 'table' then
+    if type(cb) ~= "table" then
         tinsert(postFlushCbs, cb)
     else
-        tinsert(postFlushCbs, ...)
+        for i = 1 , #cb do
+            tinsert(postFlushCbs, cb[i])
+        end
     end
     queueFlush()
 end
 
 return {
-  queueJob = queueJob,
-  queuePostFlushCb = queuePostFlushCb
+    queueJob = queueJob,
+    invalidateJob = invalidateJob,
+    queuePostFlushCb = queuePostFlushCb
 }

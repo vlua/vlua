@@ -124,8 +124,10 @@ end
 
 local function mainLoop()
     local flushCallbacks = require("vlua.nextTick").flushCallbacks
+    local flushCallbacks3 = require("reactivity.nextTick").flushCallbacks
     while (not exit) do
         flushCallbacks()
+        flushCallbacks3()
         local cos = updaters
         updaters = {}
         for i, co in ipairs(cos) do

@@ -20,11 +20,7 @@ local function nextTick(cb, ctx)
         callbacks,
         function()
             if (cb) then
-                --   try {
                 cb(ctx)
-            --   } catch (e) {
-            --     handleError(e, ctx, 'nextTick')
-            --   }
             end
         end
     )

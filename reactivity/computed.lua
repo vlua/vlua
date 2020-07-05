@@ -1,8 +1,8 @@
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
-local SET, ADD, DELETE, CLEAR = TriggerOpTypes.SET, TriggerOpTypes.ADD, TriggerOpTypes.DELETE, TriggerOpTypes.CLEAR
-local GET, HAS, ITERATE = TrackOpTypes.GET, TrackOpTypes.HAS, TrackOpTypes.ITERATE
+local SET, ADD, DELETE = TriggerOpTypes.SET, TriggerOpTypes.ADD, TriggerOpTypes.DELETE
+local GET, ITERATE = TrackOpTypes.GET, TrackOpTypes.ITERATE
 
 local Effect = require("reactivity.effect")
 local track, trigger, IPAIR_KEY, PAIR_KEY, effect =

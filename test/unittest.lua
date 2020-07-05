@@ -3,6 +3,7 @@ require("LuaPanda").start("127.0.0.1", 8818)
 ---@type luaunit
 local lu = require("test.luaunit")
 local util = require('vlua.util')
+local reactiveUtils = require("reactivity.reactiveUtils")
 
 local warnMsg
 local warn = util.warn
@@ -10,6 +11,9 @@ util.warn = function(msg,...)
     warnMsg = msg
     warn(msg, ...)
 end
+
+reactiveUtils.warn = util.warn
+
 function lu.clearWarn()
     warnMsg = nil
 end

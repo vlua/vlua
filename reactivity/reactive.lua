@@ -94,7 +94,7 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
         return
     end
 
-    local childOb = not shallow and createReactiveObject(val, isReadonly, shallow)
+    local childOb = not shallow and type(val) == "table" and createReactiveObject(val, isReadonly, shallow)
 
     local property = {}
     properties[key] = property
@@ -117,7 +117,7 @@ local function defineReactive(target, key, val, isReadonly, shallow, properties)
                 trigger(target, TriggerOpTypes.SET, key, newVal[V_GETTER](self), oldValue)
                 return
             else
-                newVal = shallow and newVal or createReactiveObject(newVal, isReadonly, shallow)
+                childOb = not shallow and type(newVal) == "table" and createReactiveObject(newVal, isReadonly, shallow)
             end
 
             val = newVal
@@ -139,13 +139,9 @@ local function walk(obj, isReadonly, shallow, properties)
 end
 
 createReactiveObject = function(target, isReadonly, shallow)
-    if (type(target) ~= "table") then
-        return target
-    end
-
     local observed = getmetatable(target)
 
-    if (observed == nil or (observed and not observed[IS_REACTIVE])) and not target[SKIP] then
+    if observed == nil then
         observed = {}
         observed[RAW] = target
         observed[IS_READONLY] = isReadonly
@@ -226,6 +222,12 @@ createReactiveObject = function(target, isReadonly, shallow)
 end
 
 local function reactive(target)
+    if (type(target) ~= "table") then
+        if __DEV__ then
+            warn("target cannot be made reactive: ", tostring(target))
+        end
+        return target
+    end
     return createReactiveObject(target, false, false)
 end
 
@@ -233,10 +235,22 @@ end
 -- properties are reactive, and does NOT unwrap refs nor recursively convert
 -- returned properties.
 local function shallowReactive(target)
+    if (type(target) ~= "table") then
+        if __DEV__ then
+            warn("target cannot be made shallow reactive: ", tostring(target))
+        end
+        return target
+    end
     return createReactiveObject(target, false, true)
 end
 
 local function readonly(target)
+    if (type(target) ~= "table") then
+        if __DEV__ then
+            warn("target cannot be made readonly reactive: ", tostring(target))
+        end
+        return target
+    end
     return createReactiveObject(target, true, false)
 end
 
@@ -245,6 +259,12 @@ end
 -- returned properties.
 -- This is used for creating the props proxy object for stateful components.
 local function shallowReadonly(target)
+    if (type(target) ~= "table") then
+        if __DEV__ then
+            warn("target cannot be made shallow readonly reactive: ", tostring(target))
+        end
+        return target
+    end
     return createReactiveObject(target, true, true)
 end
 
@@ -263,9 +283,21 @@ local function isReactive(value)
     return observed and observed[IS_REACTIVE]
 end
 
-local function markRaw(value)
-    value[SKIP] = true
-    return value
+local function markRaw(target)
+    if (type(target) ~= "table") then
+        if __DEV__ then
+            warn("target cannot be made raw: ", tostring(target))
+        end
+        return target
+    end
+    if getmetatable(target) == nil then
+        return setmetatable(target, SKIP)
+    else
+        if __DEV__ then
+            warn("target with metatable cannot be made raw: ", tostring(target))
+        end
+        return target
+    end
 end
 
 Reactive.reactive = reactive

@@ -188,21 +188,21 @@ describe(
             function()
                 local assertValue = function(value)
                     reactive(value)
-                    expect():toHaveBeenWarnedLast()
+                    lu.toHaveBeenWarned('target cannot be made reactive: ')
                 end
 
                 assertValue(1)
                 assertValue("foo")
                 assertValue(false)
                 assertValue(nil)
-                assertValue(undefined)
-                local s = Symbol()
+                assertValue(nil)
+                local s = 1
                 assertValue(s)
-                local p = Promise:resolve()
+                local p = io.output()
                 lu.assertEquals(reactive(p), p)
                 local r = ""
                 lu.assertEquals(reactive(r), r)
-                local d = Date()
+                local d = os.clock()
                 lu.assertEquals(reactive(d), d)
             end
         )
@@ -210,23 +210,23 @@ describe(
             "markRaw",
             function()
                 local obj = reactive({foo = {a = 1}, bar = markRaw({b = 2})})
-                lu.assertEquals(isReactive(obj.foo), true)
-                lu.assertEquals(isReactive(obj.bar), false)
+                lu.assertEquals(isReactive(obj.foo) == true, true)
+                lu.assertEquals(isReactive(obj.bar) == true, false)
             end
         )
         it(
             "should not observe frozen objects",
             function()
-                local obj = reactive({foo = Object:freeze({a = 1})})
-                lu.assertEquals(isReactive(obj.foo), false)
+                local obj = reactive({foo = setmetatable({a = 1}, {})})
+                lu.assertEquals(isReactive(obj.foo) == true, false)
             end
         )
         it(
             "should not observe objects with __v_skip",
             function()
-                local original = {foo = 1, __v_skip = true}
+                local original = markRaw({foo = 1})
                 local observed = reactive(original)
-                lu.assertEquals(isReactive(observed), false)
+                lu.assertEquals(isReactive(observed) == true, false)
             end
         )
     end

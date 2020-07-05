@@ -1,5 +1,5 @@
 local ReactiveFlags = {
-    SKIP = "__v_skip",
+    SKIP = {"__v_skip"},
     IS_REACTIVE = "__v_isReactive",
     IS_READONLY = "__v_isReadonly",
     IS_SHALLOW = "__v_isShallow",

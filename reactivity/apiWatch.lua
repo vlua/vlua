@@ -12,14 +12,14 @@ local track, trigger, ITERATE_KEY, stop, effect =
 local config = require("reactivity.config")
 local __DEV__ = config.__DEV__
 
-local type, ipairs, pairs, tinsert = type, ipairs, pairs, table.insert
+local getmetatable, type, ipairs, pairs, tinsert = getmetatable, type, ipairs, pairs, table.insert
 
 local scheduler = require("reactivity.scheduler")
 local queueJob, queuePostFlushCb = scheduler.queueJob, scheduler.queuePostFlushCb
 
 local reactiveUtils = require("reactivity.reactiveUtils")
-local isFunction, isObject, hasChanged, extend, warn, callWithErrorHandling, callWithAsyncErrorHandling, NOOP =
-    reactiveUtils.isFunction,
+local isCallable, isObject, hasChanged, extend, warn, callWithErrorHandling, callWithAsyncErrorHandling, NOOP =
+    reactiveUtils.isCallable,
     reactiveUtils.isObject,
     reactiveUtils.hasChanged,
     reactiveUtils.extend,
@@ -49,35 +49,13 @@ local function traverse(value, seen)
         return value
     end
     seen[value] = true
-    -- if isArray(value) then
-    --     local i = 0
-    --     repeat
-    --         traverse(value[i + 1], seen)
-    --         i = i + 1
-    --     until not (i < #value)
-    -- elseif value:instanceof(Map) then
-    --     value:forEach(
-    --         function(v, key)
-    --             -- to register mutation dep for existing keys
-    --             traverse(value:get(key), seen)
-    --         end
-    --     )
-    -- elseif value:instanceof(Set) then
-    --     value:forEach(
-    --         function(v)
-    --             traverse(v, seen)
-    --         end
-    --     )
-    -- else
     for key in pairs(value) do
-        -- [ts2lua]value下标访问可能不正确
         traverse(value[key], seen)
     end
-    -- end
     return value
 end
 
-local function doWatch(multiSource, source, cb, options)
+local function doWatch(source, cb, options)
     local immediate, deep, flush, onTrack, onTrigger
     if options then
         immediate, deep, flush, onTrack, onTrigger =
@@ -116,6 +94,7 @@ local function doWatch(multiSource, source, cb, options)
     local runner
     local getter = nil
 
+    local multiSource = type(source) == 'table' and getmetatable(source) == nil
     if multiSource then
         getter = function()
             local result = {}
@@ -124,7 +103,7 @@ local function doWatch(multiSource, source, cb, options)
                     tinsert(result, s.value)
                 elseif isReactive(s) then
                     tinsert(result, traverse(s))
-                elseif isFunction(s) then
+                elseif isCallable(s) then
                     tinsert(result, callWithErrorHandling(s, instance, ErrorCodes.WATCH_GETTER))
                 else
                     if __DEV__ then
@@ -134,7 +113,7 @@ local function doWatch(multiSource, source, cb, options)
             end
             return result
         end
-    elseif isFunction(source) then
+    elseif isCallable(source) then
         if cb then
             -- getter with cb
             getter = function()
@@ -221,16 +200,16 @@ local function doWatch(multiSource, source, cb, options)
     local scheduler = nil
     if flush == "sync" then
         scheduler = invoke
-    elseif flush == "pre" then
-        scheduler = function(job)
-            if not instance or instance.isMounted then
-                queueJob(job)
-            else
-                -- with 'pre' option, the first call must happen before
-                -- the component is mounted so it is called synchronously.
-                job()
-            end
-        end
+    -- elseif flush == "pre" then
+    --     scheduler = function(job)
+    --         if not instance or instance.isMounted then
+    --             queueJob(job)
+    --         else
+    --             -- with 'pre' option, the first call must happen before
+    --             -- the component is mounted so it is called synchronously.
+    --             job()
+    --         end
+    --     end
     else
         scheduler = function(job)
             queuePostFlushCb(job, instance and instance.suspense)
@@ -271,7 +250,7 @@ local function doWatch(multiSource, source, cb, options)
 end
 
 local function watchEffect(effect, options)
-    return doWatch(false, effect, nil, options)
+    return doWatch(effect, nil, options)
 end
 
 -- overload #1: array of multiple sources + cb
@@ -282,14 +261,14 @@ end
 -- overload #3: watching reactive object w/ cb
 -- implementation
 local function watch(source, cb, options)
-    if __DEV__ and not isFunction(cb) then
+    if __DEV__ and not isCallable(cb) then
         warn(
             [[`\`watch(fn, options?)\` signature has been moved to a separate API. ` +
       `Use \`watchEffect(fn, options?)\` instead. \`watch\` now only ` +
       `supports \`watch(source, cb, options?) signature.`]]
         )
     end
-    return doWatch(false, source, cb, options)
+    return doWatch(source, cb, options)
 end
 
 -- this.$watch
@@ -305,5 +284,6 @@ end
 
 return {
     watch = watch,
+    watchEffect = watchEffect,
     instanceWatch = instanceWatch
 }

@@ -147,7 +147,7 @@ describe(
                             table.insert(calls, "cb3")
                         end
 
-                        queuePostFlushCb({cb1, cb2})
+                        queuePostFlushCb(cb1, cb2)
                         queuePostFlushCb(cb3)
                         lu.assertEquals(calls, {})
                         waitForUpdate()
@@ -173,9 +173,9 @@ describe(
                             table.insert(calls, "cb3")
                         end
 
-                        queuePostFlushCb({cb1, cb2})
+                        queuePostFlushCb(cb1, cb2)
                         queuePostFlushCb(cb3)
-                        queuePostFlushCb({cb1, cb3})
+                        queuePostFlushCb(cb1, cb3)
                         queuePostFlushCb(cb2)
                         lu.assertEquals(calls, {})
                         waitForUpdate()

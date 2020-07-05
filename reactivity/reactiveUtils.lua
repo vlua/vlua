@@ -74,7 +74,7 @@ local function callWithErrorHandling(fn, instance, type, ...)
 end
 
 local function callWithAsyncErrorHandling(fn, instance, type, ...)
-    if isFunction(fn) then
+    if isCallable(fn) then
         local res = callWithErrorHandling(fn, instance, type, ...)
         return res
     end

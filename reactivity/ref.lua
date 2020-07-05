@@ -79,7 +79,7 @@ return function(Reactive)
             [IS_REACTIVE] = true,
             __index = function(self, key)
                 assert(key == "value", 'only access Ref getter with "value" key')
-                return getter()
+                return getter(self)
             end,
             __newindex = function(self, key, newValue)
                 assert(key == "value", 'only access Ref setter with "value" key')

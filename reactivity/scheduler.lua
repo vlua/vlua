@@ -1,5 +1,5 @@
 local nextTick = require("reactivity.nextTick").nextTick
-local pairs, type, tinsert, tremove, tsort = pairs, type, table.insert, table.remove, table.sort
+local select, pairs, type, tinsert, tremove, tsort = select, pairs, type, table.insert, table.remove, table.sort
 local __DEV__ = require("reactivity.config").__DEV__
 local ErrorCodes = require("reactivity.ErrorCodes")
 local reactiveUtils = require("reactivity.reactiveUtils")
@@ -36,7 +36,7 @@ local function checkRecursiveUpdates(seen, fn)
     end
 end
 
-local function flushPostFlushCbs(seen, ...)
+local function flushPostFlushCbs(seen)
     if #postFlushCbs > 0 then
         -- 去重
         local cbs = {}
@@ -123,12 +123,12 @@ local function invalidateJob(job)
     end
 end
 
-local function queuePostFlushCb(cb, ...)
-    if type(cb) ~= "table" then
-        tinsert(postFlushCbs, cb)
-    else
-        for i = 1 , #cb do
-            tinsert(postFlushCbs, cb[i])
+local function queuePostFlushCb(...)
+    local count = select("#", ...)
+    for i = 1, count do
+        local cb = select(i, ...)
+        if cb then
+            tinsert(postFlushCbs, cb)
         end
     end
     queueFlush()

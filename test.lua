@@ -1,6 +1,6 @@
 require('test.unittest')(function()
+    require("reactivity.__tests__.apiWatch_spec")
     require("reactivity.__tests__.scheduler_spec")
-    -- require("reactivity.__tests__.apiWatch_spec")
     require("reactivity.__tests__.collections.Map_spec")
     require("reactivity.__tests__.reactiveArray_spec")
     require("reactivity.__tests__.shallowReactive_spec")

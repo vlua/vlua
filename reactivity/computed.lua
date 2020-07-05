@@ -29,15 +29,24 @@ local __DEV__ = config.__DEV__
 local type, ipairs, pairs, setmetatable = type, ipairs, pairs, setmetatable
 
 local reactiveUtils = require("reactivity.reactiveUtils")
-local isObject, hasChanged, extend, warn, NOOP, isFunction =
+local isObject, hasChanged, extend, warn, NOOP, isFunction, isCallable =
     reactiveUtils.isObject,
     reactiveUtils.hasChanged,
     reactiveUtils.extend,
     reactiveUtils.warn,
     reactiveUtils.NOOP,
-    reactiveUtils.isFunction
+    reactiveUtils.isFunction,
+    reactiveUtils.isCallable
 
 local function computed(getter, setter)
+    if __DEV__ then
+        if not isCallable(getter) then
+            warn('computed getter is not a function or table with __call')
+        end
+        if setter ~= nil and not isCallable(setter) then
+            warn('computed setter is not a function or table with __call')
+        end
+    end
     local dirty = true
     local value = nil
     local computed = nil
@@ -70,7 +79,7 @@ local function computed(getter, setter)
     local setterImpl
     if not setter then
         setterImpl = function(self)
-            warn("readonly computed value")
+            warn('Write operation failed: computed value is readonly')
         end
     else
         setterImpl = setter
@@ -82,11 +91,11 @@ local function computed(getter, setter)
         [IS_REACTIVE] = true,
         __index = function(self, key)
             assert(key == "value", 'only access Ref getter with "value" key')
-            return getter()
+            return getterImpl(self)
         end,
         __newindex = function(self, key, newValue)
             assert(key == "value", 'only access Ref setter with "value" key')
-            setter(self, newValue)
+            setterImpl(self, newValue)
         end
     }
     computed = {

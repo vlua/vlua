@@ -1,4 +1,5 @@
 require('test.unittest')(function()
+    require("reactivity.__tests__.computed_spec")
     require("reactivity.__tests__.reactive_spec")
     require("reactivity.__tests__.effect_spec")
     require("test.dep_spec")

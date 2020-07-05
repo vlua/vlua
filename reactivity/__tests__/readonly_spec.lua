@@ -1,6 +1,20 @@
-require("reactivity/src")
-require("@vue/shared")
+local lu = require("test.luaunit")
+local Effect = require("reactivity.effect")
+local track, trigger, ITERATE_KEY, effect, stop =
+    Effect.track,
+    Effect.trigger,
+    Effect.ITERATE_KEY,
+    Effect.effect,
+    Effect.stop
 
+local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
+
+local Reactive = require("reactivity.reactive")
+local computed = require("reactivity.computed").computed
+local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
+local reactive, markRaw, isReactive = Reactive.reactive, Reactive.markRaw, Reactive.isReactive
+local Ref = require("reactivity.ref")(Reactive)
+local ref, isRef = Ref.ref, Ref.isRef
 describe('reactivity/readonly', function()
   mockWarn()
   describe('Object', function()

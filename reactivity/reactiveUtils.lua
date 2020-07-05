@@ -1,7 +1,14 @@
 local ReactiveFlags = require("reactivity.reactive.ReactiveFlags")
 local TrackOpTypes = require("reactivity.operations.TrackOpTypes")
 local TriggerOpTypes = require("reactivity.operations.TriggerOpTypes")
-local type, ipairs, pairs, ltraceback, xpcall, tinsert = type, ipairs, pairs, debug.traceback, xpcall, table.tinsert
+local type, ipairs, pairs, ltraceback, xpcall, tinsert, getmetatable =
+    type,
+    ipairs,
+    pairs,
+    debug.traceback,
+    xpcall,
+    table.tinsert,
+    getmetatable
 
 --[[*
  * Quick object check - this is primarily used to tell
@@ -14,6 +21,19 @@ end
 
 local function isFunction(obj)
     return type(obj) == "function"
+end
+
+local function isCallable(obj)
+    local t = type(obj)
+    if t == "function" then
+        return true
+    elseif t == "table" then
+        local mt = getmetatable(obj)
+        if mt then
+            return mt.__call ~= nil
+        end
+    end
+    return false
 end
 -- compare whether a value has changed, accounting for NaN.
 local function hasChanged(value, oldValue)
@@ -41,7 +61,8 @@ local function traceback(msg)
 end
 
 local function callWithErrorHandling(fn, instance, type, ...)
-    local result, ret = xpcall(
+    local result, ret =
+        xpcall(
         fn,
         function(err)
             warn(ltraceback(err, instance, type))
@@ -76,6 +97,7 @@ end
 return {
     isObject = isObject,
     isFunction = isFunction,
+    isCallable = isCallable,
     hasChanged = hasChanged,
     extend = extend,
     warn = warn,
@@ -84,5 +106,5 @@ return {
     traceback = traceback,
     callWithErrorHandling = callWithErrorHandling,
     callWithAsyncErrorHandling = callWithAsyncErrorHandling,
-    array_includes = array_includes,
+    array_includes = array_includes
 }

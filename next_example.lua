@@ -23,33 +23,42 @@ local obData = reactive.reactive(data)
 obData.actor.aname = "a1"
 obData.actor.aname = "a2"
 
+obData.actor.obj = {
+    a = 1
+}
+
 effect(function(effect, target, type, key, newValue, oldValue)
    print("onEffect", effect, target, type, key, newValue, oldValue)
-   Effect.track(obData.actor, TrackOpTypes.ITERATE, Effect.ITERATE_KEY)
+   Effect.track(obData.actor and obData.actor.obj, TrackOpTypes.ITERATE, Effect.ITERATE_KEY)
 end)
 
-obData.actor.b = 123
-obData.actor.c = 1
-obData.actor.d = 2
-obData.actor.e = "123"
-obData.actor.d = nil
-obData.actor.c = 3
-obData.actor.c = 123
-obData.actor.c = nil
+obData.actor.e = 123
+obData.actor.aname = "dsaf"
+obData.actor.aname = nil
+
+obData.actor.obj.b = 123
+obData.actor.obj.c = 1
+obData.actor.obj.d = 2
+obData.actor.obj.e = "123"
+obData.actor.obj.d = nil
+obData.actor.obj.c = 3
+obData.actor.obj.c = 123
+obData.actor.obj.c = nil
 obData.actor = nil
 obData.actor = {
     aname = "aname123",
-    aid = 444
+    aid = 444,
+    obj = {a = 2}
 }
 
-obData.actor.b = 123
-obData.actor.c = 1
-obData.actor.d = 2
-obData.actor.e = "123"
-obData.actor.d = nil
-obData.actor.c = 3
-obData.actor.c = 123
-obData.actor.c = nil
+obData.actor.obj.b = 123
+obData.actor.obj.c = 1
+obData.actor.obj.d = 2
+obData.actor.obj.e = "123"
+obData.actor.obj.d = nil
+obData.actor.obj.c = 3
+obData.actor.obj.c = 123
+obData.actor.obj.c = nil
 
 local w =
 watch(

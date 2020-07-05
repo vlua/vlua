@@ -40,7 +40,6 @@ return function(Reactive)
             return false
         end
     end
-
     local function createRef(value, isReadonly, shallow)
         if isRef(value) then
             return value
@@ -123,6 +122,87 @@ return function(Reactive)
         end
     end
 
+    ---@param factory func @func(track: func():nil, trigger: func():nil):func(self: any):any, func(self: any, newVal: any) : nil
+    local function customRef(factory)
+        local refObject
+
+        local getter, setter =
+            factory(
+            function()
+                track(refObject, TrackOpTypes.GET, "value")
+            end,
+            function()
+                trigger(refObject, TriggerOpTypes.SET, "value")
+            end
+        )
+
+        local RefMetatable = {
+            [IS_READONLY] = false,
+            [IS_SHALLOW] = false,
+            [IS_REACTIVE] = true,
+            __index = function(self, key)
+                assert(key == "value", 'only access Ref getter with "value" key')
+                return getter()
+            end,
+            __newindex = function(self, key, newValue)
+                assert(key == "value", 'only access Ref setter with "value" key')
+                setter(self, newValue)
+            end
+        }
+        refObject = {
+            [V_GETTER] = getter,
+            [V_SETTER] = setter,
+            [IS_REF] = true,
+            [DEPSMAP] = {}
+        }
+        setmetatable(refObject, RefMetatable)
+        return refObject
+    end
+
+    local function toRef(object, key)
+        local refObject
+
+        local getter = function(self)
+            return object[key]
+        end
+        local setter = function(self, newVal)
+            object[key] = newVal
+        end
+
+        local RefMetatable = {
+            [IS_READONLY] = false,
+            [IS_SHALLOW] = false,
+            [IS_REACTIVE] = true,
+            __index = function(self, key)
+                assert(key == "value", 'only access Ref getter with "value" key')
+                return getter()
+            end,
+            __newindex = function(self, key, newValue)
+                assert(key == "value", 'only access Ref setter with "value" key')
+                setter(self, newValue)
+            end
+        }
+        refObject = {
+            [V_GETTER] = getter,
+            [V_SETTER] = setter,
+            [IS_REF] = true,
+            [DEPSMAP] = {}
+        }
+        setmetatable(refObject, RefMetatable)
+        return refObject
+    end
+
+    local function toRefs(object)
+        if __DEV__ and not Reactive.isReactive(object) then
+            warn('')
+        end
+        local ret = {}
+        for key in pairs(object) do
+            ret[key] = toRef(object, key)
+        end
+        return ret
+    end
+
     return {
         isRef = isRef,
         ref = ref,
@@ -130,6 +210,9 @@ return function(Reactive)
         readonlyRef = readonlyRef,
         readonlyShallowRef = readonlyShallowRef,
         triggerRef = triggerRef,
-        unref = unref
+        unref = unref,
+        toRefs = toRefs,
+        toRef = toRef,
+        customRef = customRef
     }
 end
